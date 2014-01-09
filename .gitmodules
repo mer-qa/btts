@@ -1,3 +1,6 @@
 [submodule "bluez"]
 	path = bluez
 	url = git://git.kernel.org/pub/scm/bluetooth/bluez.git
+[submodule "ofono"]
+	path = ofono
+	url = https://git.kernel.org/pub/scm/network/ofono/ofono.git
