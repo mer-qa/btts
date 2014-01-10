@@ -1,0 +1,366 @@
+#!/usr/bin/python3
+
+from __future__ import absolute_import, print_function, unicode_literals
+
+from gi.repository import GObject
+
+import sys
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+from optparse import OptionParser
+
+sys.path.append("../bluez/test")
+import bluezutils
+
+BUS_NAME = 'org.bluez'
+AGENT_INTERFACE = 'org.bluez.Agent1'
+AGENT_PATH = "/test/agent"
+
+AGENT_BUS_NAME = 'org.nemomobile.bt_test_suite.BluezAgent'
+TEST_INTERFACE = 'org.nemomobile.bt_test_suite.BluezAgent'
+
+bus = None
+device_obj = None
+dev_path = None
+
+def set_trusted(path):
+	props = dbus.Interface(bus.get_object("org.bluez", path),
+			       "org.freedesktop.DBus.Properties")
+	props.Set("org.bluez.Device1", "Trusted", True)
+
+def dev_connect(path):
+	dev = dbus.Interface(bus.get_object("org.bluez", path),
+			     "org.bluez.Device1")
+	dev.Connect()
+
+class Canceled(dbus.DBusException):
+	_dbus_error_name = "org.bluez.Error.Canceled"
+
+class Rejected(dbus.DBusException):
+	_dbus_error_name = "org.bluez.Error.Rejected"
+
+class ActiveCall(dbus.service.Object):
+	def __init__(self, reply_handler, error_handler):
+		self.reply_handler = reply_handler
+		self.error_handler = error_handler
+
+	def name(self):
+		return self.__class__.__name__
+
+	def finish(self, reply=None):
+		pass
+
+	def reject(self):
+		assert self.error_handler
+		self.error_handler(Rejected("Rejected by user"))
+
+	def cancel(self):
+		assert self.error_handler
+		self.error_handler(Canceled("Canceled by user"))
+
+class NoCall(ActiveCall):
+	def __init__(self):
+		ActiveCall.__init__(self, None, None)
+
+class RequestPinCodeCall(ActiveCall):
+	def __init__(self, device, reply_handler, error_handler):
+		ActiveCall.__init__(self, reply_handler, error_handler)
+		self.arg_device = device
+
+	def finish(self, reply):
+		assert reply
+		pin_code = reply
+		self.reply_handler(pin_code)
+
+class DisplayPinCodeCall(ActiveCall):
+	def __init__(self, device, pin_code, reply_handler, error_handler):
+		ActiveCall.__init__(self, reply_handler, error_handler)
+		self.arg_device = device
+		self.arg_pin_code = pin_code
+
+	def finish(self, reply):
+		assert not reply
+		self.reply_handler()
+
+class RequestPasskeyCall(ActiveCall):
+	def __init__(self, device, reply_handler, error_handler):
+		ActiveCall.__init__(self, reply_handler, error_handler)
+		self.arg_device = device
+
+	def finish(self, reply):
+		assert reply
+		passkey = reply
+		self.reply_handler(dbus.UInt32(passkey))
+
+class RequestConfirmationCall(ActiveCall):
+	def __init__(self, device, passkey, reply_handler, error_handler):
+		ActiveCall.__init__(self, reply_handler, error_handler)
+		self.arg_device = device
+		self.arg_passkey = passkey
+
+	def finish(self, reply):
+		assert not reply
+		self.reply_handler()
+
+class RequestAuthorizationCall(ActiveCall):
+	def __init__(self, device, reply_handler, error_handler):
+		ActiveCall.__init__(self, reply_handler, error_handler)
+		self.arg_device = device
+
+	def finish(self, reply):
+		assert not reply
+		self.reply_handler()
+
+class AuthorizeServiceCall(ActiveCall):
+	def __init__(self, device, uuid, reply_handler, error_handler):
+		ActiveCall.__init__(self, reply_handler, error_handler)
+		self.arg_device = device
+		selg.arg_uuid = uuid
+
+	def finish(self, reply):
+		assert not reply
+		self.reply_handler()
+
+class CancelCall(ActiveCall):
+	def __init__(self, reply_handler, error_handler):
+		ActiveCall.__init__(self, reply_handler, error_handler)
+
+	def finish(self, reply):
+		print("reply '%s'" % (reply))
+		assert not reply
+		self.reply_handler()
+
+class State:
+	released = False
+	passkey_displayed = (0, 0)
+	_active_call = NoCall()
+
+	@property
+	def active_call(self):
+		return self._active_call
+
+	@active_call.setter
+	def active_call(self, call):
+		assert (isinstance(self._active_call, NoCall) or
+			isinstance(call, NoCall))
+		self._active_call = call
+
+class Agent(dbus.service.Object):
+	state = State()
+	capability = "KeyboardDisplay"
+
+	def __init__(self, bus, path):
+		dbus.service.Object.__init__(self, bus, path)
+		obj = bus.get_object(BUS_NAME, "/org/bluez")
+		self.manager = dbus.Interface(obj, "org.bluez.AgentManager1")
+		self.manager.RegisterAgent(self.__dbus_object_path__, self.capability)
+		self.manager.RequestDefaultAgent(self.__dbus_object_path__)
+
+
+	#------------------------------------------------------------
+	@dbus.service.method(AGENT_INTERFACE,
+			     in_signature="", out_signature="")
+	def Release(self):
+		print("AGENT_INTERFACE.Release ()")
+		self.state.released = True
+
+	#------------------------------------------------------------
+	@dbus.service.method(AGENT_INTERFACE,
+			     in_signature="o", out_signature="s",
+			     async_callbacks=('reply_handler', 'error_handler'))
+	def RequestPinCode(self, device, reply_handler, error_handler):
+		print("AGENT_INTERFACE.RequestPinCode (%s)" % (device))
+		self.state.active_call = RequestPinCodeCall(device,
+							    reply_handler,
+							    error_handler)
+
+	#------------------------------------------------------------
+	@dbus.service.method(AGENT_INTERFACE,
+			     in_signature="os", out_signature="",
+			     async_callbacks=('reply_handler', 'error_handler'))
+	def DisplayPinCode(self, device, pincode, reply_handler,
+			   error_handler):
+		print("AGENT_INTERFACE.DisplayPinCode (%s, %s)" % (device, pincode))
+		self.state.active_call = DisplayPinCodeCall(device, pincode,
+							    reply_handler,
+							    error_handler)
+
+	#------------------------------------------------------------
+	@dbus.service.method(AGENT_INTERFACE,
+			     in_signature="o", out_signature="u",
+			     async_callbacks=('reply_handler', 'error_handler'))
+	def RequestPasskey(self, device, reply_handler, error_handler):
+		print("AGENT_INTERFACE.RequestPasskey (%s)" % (device))
+		self.state.active_call = RequestPasskeyCall(device,
+							    reply_handler,
+							    error_handler)
+
+	#------------------------------------------------------------
+	@dbus.service.method(AGENT_INTERFACE,
+			     in_signature="ouq", out_signature="")
+	def DisplayPasskey(self, device, passkey, entered):
+		print("AGENT_INTERFACE.DisplayPasskey (%s, %06u entered %u)" %
+		      (device, passkey, entered))
+		self.state.passkey_displayed = (passkey, entered)
+
+	#------------------------------------------------------------
+	@dbus.service.method(AGENT_INTERFACE,
+			     in_signature="ou", out_signature="",
+			     async_callbacks=('reply_handler', 'error_handler'))
+	def RequestConfirmation(self, device, passkey, reply_handler,
+			error_handler):
+		print("AGENT_INTERFACE.RequestConfirmation (%s, %06d)" % (device, passkey))
+		self.state.active_call = RequestConfirmationCall(device,
+								 passkey,
+								 reply_handler,
+								 error_handler)
+
+	#------------------------------------------------------------
+	@dbus.service.method(AGENT_INTERFACE,
+			     in_signature="o", out_signature="",
+			     async_callbacks=('reply_handler', 'error_handler'))
+	def RequestAuthorization(self, device, reply_handler, error_handler):
+		print("AGENT_INTERFACE.RequestAuthorization (%s)" % (device))
+		self.state.active_call = RequestAuthorizationCall(device,
+								  reply_handler,
+								  error_handler)
+
+	#------------------------------------------------------------
+	@dbus.service.method(AGENT_INTERFACE,
+			     in_signature="os", out_signature="",
+			     async_callbacks=('reply_handler', 'error_handler'))
+	def AuthorizeService(self, device, uuid, reply_handler, error_handler):
+		print("AGENT_INTERFACE.AuthorizeService (%s, %s)" % (device, uuid))
+		self.state.active_call = AuthorizeServiceCall(device, uuid,
+							      reply_handler,
+							      error_handler)
+
+	#------------------------------------------------------------
+	@dbus.service.method(AGENT_INTERFACE,
+			     in_signature="", out_signature="",
+			     async_callbacks=('reply_handler', 'error_handler'))
+	def Cancel(self, reply_handler, error_handler):
+		print("AGENT_INTERFACE.Cancel ()")
+		self.state.active_call = NoCall()
+		self.state.passkey_displayed = (0, 0)
+		self.state.active_call = CancelCall(reply_handler, error_handler)
+
+	#------------------------------------------------------------
+	@dbus.service.method(TEST_INTERFACE,
+			     in_signature="", out_signature="i")
+	def IsReleased(self):
+		print("TEST_INTERFACE.IsReleased ()")
+		return self.state.active_call.released
+
+	#------------------------------------------------------------
+	@dbus.service.method(TEST_INTERFACE,
+			     in_signature="", out_signature="(ii)")
+	def PasskeyDisplayed(self):
+		print("TEST_INTERFACE.PasskeyDisplayed ()")
+		return self.state.active_call.passkey_displayed
+
+	#------------------------------------------------------------
+	@dbus.service.method(TEST_INTERFACE,
+			     in_signature="", out_signature="s")
+	def ActiveCall(self):
+		print("TEST_INTERFACE.ActiveCall ()")
+		return self.state.active_call.name()
+
+	#------------------------------------------------------------
+	@dbus.service.method(TEST_INTERFACE,
+			     in_signature="s", out_signature="")
+	def FinishActiveCall(self, reply):
+		print("TEST_INTERFACE.FinishActiveCall ()")
+		self.state.active_call.finish(reply)
+		self.state.active_call = NoCall()
+
+	#------------------------------------------------------------
+	@dbus.service.method(TEST_INTERFACE,
+			     in_signature="", out_signature="")
+	def RejectActiveCall(self):
+		print("TEST_INTERFACE.RejectActiveCall ()")
+		self.state.active_call.reject()
+		self.state.active_call = NoCall()
+
+	#------------------------------------------------------------
+	@dbus.service.method(TEST_INTERFACE,
+			     in_signature="", out_signature="")
+	def CancelActiveCall(self):
+		print("TEST_INTERFACE.CancelActiveCall ()")
+		self.state.active_call.cancel()
+		self.state.active_call = NoCall()
+
+	#------------------------------------------------------------
+	@dbus.service.method(TEST_INTERFACE,
+			     in_signature="", out_signature="s")
+	def Capability(self):
+		print("TEST_INTERFACE.Capability ()")
+
+	#------------------------------------------------------------
+	@dbus.service.method(TEST_INTERFACE,
+			     in_signature="s", out_signature="")
+	def SetCapability(self, capability):
+		print("TEST_INTERFACE.SetCapability (%s)" % (capability))
+		self.capability = capability
+		self.manager.UnregisterAgent(self.__dbus_object_path__)
+		self.manager.RegisterAgent(self.__dbus_object_path__, self.capability)
+		self.manager.RequestDefaultAgent(self.__dbus_object_path__)
+
+def pair_reply():
+	print("Device paired")
+	set_trusted(dev_path)
+	dev_connect(dev_path)
+	mainloop.quit()
+
+def pair_error(error):
+	err_name = error.get_dbus_name()
+	if err_name == "org.freedesktop.DBus.Error.NoReply" and device_obj:
+		print("Timed out. Cancelling pairing")
+		device_obj.CancelPairing()
+	else:
+		print("Creating device failed: %s" % (error))
+
+
+	mainloop.quit()
+
+if __name__ == '__main__':
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+	name = dbus.service.BusName(AGENT_BUS_NAME, bus)
+
+	parser = OptionParser()
+	parser.add_option("-i", "--adapter", action="store",
+					type="string",
+					dest="adapter_pattern",
+					default=None)
+	parser.add_option("-t", "--timeout", action="store",
+					type="int", dest="timeout",
+					default=60000)
+	(options, args) = parser.parse_args()
+
+	mainloop = GObject.MainLoop()
+
+	path = "/test/agent"
+	agent = Agent(bus, path)
+
+	print("Agent registered")
+
+	# Fix-up old style invocation (BlueZ 4)
+	if len(args) > 0 and args[0].startswith("hci"):
+		options.adapter_pattern = args[0]
+		del args[:1]
+
+	if len(args) > 0:
+		device = bluezutils.find_device(args[0],
+						options.adapter_pattern)
+		dev_path = device.object_path
+		device.Pair(reply_handler=pair_reply, error_handler=pair_error,
+								timeout=60000)
+		device_obj = device
+
+	mainloop.run()
+
+	#adapter.UnregisterAgent(path)
+	#print("Agent unregistered")
