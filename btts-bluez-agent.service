@@ -1,0 +1,8 @@
+[Unit]
+Description="Bluetooth test suite - bluez agent"
+After=bluetooth.service
+
+[Service]
+Type=dbus
+BusName=org.nemomobile.btts.BluezAgent
+ExecStart=/usr/libexec/btts/bluez-agent --mode=server
