@@ -1,3 +1,0 @@
-#!/bin/sh
-
-qdbus --system  org.nemomobile.bt_test_suite.BluezAgent /test/agent org.nemomobile.bt_test_suite.BluezAgent."${@}"
