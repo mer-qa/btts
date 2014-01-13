@@ -32,10 +32,10 @@ import bluezutils
 
 BUS_NAME = 'org.bluez'
 AGENT_INTERFACE = 'org.bluez.Agent1'
-AGENT_PATH = "/test/agent"
 
-AGENT_BUS_NAME = 'org.nemomobile.bt_test_suite.BluezAgent'
-TEST_INTERFACE = 'org.nemomobile.bt_test_suite.BluezAgent'
+AGENT_BUS_NAME = 'org.nemomobile.btts.BluezAgent'
+AGENT_PATH = "/org/nemomobile/btts/BluezAgent"
+AGENT_TEST_INTERFACE = 'org.nemomobile.btts.BluezAgent'
 
 bus = None
 device_obj = None
@@ -264,120 +264,95 @@ class Agent(dbus.service.Object):
 		self.state.active_call = CancelCall(reply_handler, error_handler)
 
 	#------------------------------------------------------------
-	@dbus.service.method(TEST_INTERFACE,
+	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="i")
 	def IsReleased(self):
-		print("TEST_INTERFACE.IsReleased ()")
+		print("AGENT_TEST_INTERFACE.IsReleased ()")
 		return self.state.active_call.released
 
 	#------------------------------------------------------------
-	@dbus.service.method(TEST_INTERFACE,
+	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="(ii)")
 	def PasskeyDisplayed(self):
-		print("TEST_INTERFACE.PasskeyDisplayed ()")
+		print("AGENT_TEST_INTERFACE.PasskeyDisplayed ()")
 		return self.state.active_call.passkey_displayed
 
 	#------------------------------------------------------------
-	@dbus.service.method(TEST_INTERFACE,
+	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="s")
 	def ActiveCall(self):
-		print("TEST_INTERFACE.ActiveCall ()")
+		print("AGENT_TEST_INTERFACE.ActiveCall ()")
 		return self.state.active_call.name()
 
 	#------------------------------------------------------------
-	@dbus.service.method(TEST_INTERFACE,
+	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="s", out_signature="")
 	def FinishActiveCall(self, reply):
-		print("TEST_INTERFACE.FinishActiveCall ()")
+		print("AGENT_TEST_INTERFACE.FinishActiveCall ()")
 		self.state.active_call.finish(reply)
 		self.state.active_call = NoCall()
 
 	#------------------------------------------------------------
-	@dbus.service.method(TEST_INTERFACE,
+	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="")
 	def RejectActiveCall(self):
-		print("TEST_INTERFACE.RejectActiveCall ()")
+		print("AGENT_TEST_INTERFACE.RejectActiveCall ()")
 		self.state.active_call.reject()
 		self.state.active_call = NoCall()
 
 	#------------------------------------------------------------
-	@dbus.service.method(TEST_INTERFACE,
+	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="")
 	def CancelActiveCall(self):
-		print("TEST_INTERFACE.CancelActiveCall ()")
+		print("AGENT_TEST_INTERFACE.CancelActiveCall ()")
 		self.state.active_call.cancel()
 		self.state.active_call = NoCall()
 
 	#------------------------------------------------------------
-	@dbus.service.method(TEST_INTERFACE,
+	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="s")
 	def Capability(self):
-		print("TEST_INTERFACE.Capability ()")
+		print("AGENT_TEST_INTERFACE.Capability ()")
 
 	#------------------------------------------------------------
-	@dbus.service.method(TEST_INTERFACE,
+	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="s", out_signature="")
 	def SetCapability(self, capability):
-		print("TEST_INTERFACE.SetCapability (%s)" % (capability))
+		print("AGENT_TEST_INTERFACE.SetCapability (%s)" % (capability))
 		self.capability = capability
 		self.manager.UnregisterAgent(self.__dbus_object_path__)
 		self.manager.RegisterAgent(self.__dbus_object_path__, self.capability)
 		self.manager.RequestDefaultAgent(self.__dbus_object_path__)
 
-def pair_reply():
-	print("Device paired")
-	set_trusted(dev_path)
-	dev_connect(dev_path)
-	mainloop.quit()
-
-def pair_error(error):
-	err_name = error.get_dbus_name()
-	if err_name == "org.freedesktop.DBus.Error.NoReply" and device_obj:
-		print("Timed out. Cancelling pairing")
-		device_obj.CancelPairing()
-	else:
-		print("Creating device failed: %s" % (error))
-
-
-	mainloop.quit()
-
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 	bus = dbus.SystemBus()
-	name = dbus.service.BusName(AGENT_BUS_NAME, bus)
 
 	parser = OptionParser()
+	parser.add_option("-m", "--mode", action="store",
+					type="string",
+					dest="mode",
+					default="client")
 	parser.add_option("-i", "--adapter", action="store",
 					type="string",
 					dest="adapter_pattern",
 					default=None)
-	parser.add_option("-t", "--timeout", action="store",
-					type="int", dest="timeout",
-					default=60000)
 	(options, args) = parser.parse_args()
 
-	mainloop = GObject.MainLoop()
+	if options.mode == "server":
+		mainloop = GObject.MainLoop()
 
-	path = "/test/agent"
-	agent = Agent(bus, path)
+		name = dbus.service.BusName(AGENT_BUS_NAME, bus)
+		agent = Agent(bus, AGENT_PATH)
+		print("Agent registered")
 
-	print("Agent registered")
+		mainloop.run()
 
-	# Fix-up old style invocation (BlueZ 4)
-	if len(args) > 0 and args[0].startswith("hci"):
-		options.adapter_pattern = args[0]
-		del args[:1]
-
-	if len(args) > 0:
-		device = bluezutils.find_device(args[0],
-						options.adapter_pattern)
-		dev_path = device.object_path
-		device.Pair(reply_handler=pair_reply, error_handler=pair_error,
-								timeout=60000)
-		device_obj = device
-
-	mainloop.run()
-
-	#adapter.UnregisterAgent(path)
-	#print("Agent unregistered")
+		#adapter.UnregisterAgent(path)
+		#print("Agent unregistered")
+	else:
+		agent_object = bus.get_object(AGENT_BUS_NAME, AGENT_PATH)
+		agent = dbus.Interface(agent_object, AGENT_TEST_INTERFACE)
+		retv = getattr(agent, args[0])(*args[1:])
+		print(retv)
