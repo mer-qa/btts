@@ -22,6 +22,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 from gi.repository import GObject
 
 import sys
+import signal
 import dbus
 import dbus.service
 import dbus.mainloop.glib
@@ -346,6 +347,12 @@ if __name__ == '__main__':
 		name = dbus.service.BusName(AGENT_BUS_NAME, bus)
 		agent = Agent(bus, AGENT_PATH)
 		print("Agent registered")
+
+		# TODO: signal handling
+		#signal.signal(signal.SIGINT,
+		#		lambda *args: gobject.idle_add(mainloop.quit))
+		#signal.signal(signal.SIGTERM,
+		#		lambda *args: gobject.idle_add(mainloop.quit))
 
 		mainloop.run()
 
