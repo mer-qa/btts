@@ -6,3 +6,6 @@ After=bluetooth.service
 Type=dbus
 BusName=org.nemomobile.btts.BluezAgent
 ExecStart=/usr/libexec/btts/bluez-agent --mode=server
+
+[Install]
+WantedBy=btts.target
