@@ -256,14 +256,14 @@ class Agent(dbus.service.Object):
 	#------------------------------------------------------------
 	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="(ii)")
-	def PasskeyDisplayed(self):
+	def GetPasskeyDisplayed(self):
 		print("AGENT_TEST_INTERFACE.PasskeyDisplayed ()")
 		return self.state.active_call.passkey_displayed
 
 	#------------------------------------------------------------
 	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="s")
-	def ActiveCall(self):
+	def GetActiveCall(self):
 		print("AGENT_TEST_INTERFACE.ActiveCall ()")
 		return self.state.active_call.name()
 
@@ -294,7 +294,7 @@ class Agent(dbus.service.Object):
 	#------------------------------------------------------------
 	@dbus.service.method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="s")
-	def Capability(self):
+	def GetCapability(self):
 		print("AGENT_TEST_INTERFACE.Capability ()")
 
 	#------------------------------------------------------------
