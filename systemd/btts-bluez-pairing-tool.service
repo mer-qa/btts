@@ -1,0 +1,11 @@
+[Unit]
+Description="Bluetooth test suite - bluez pairing tool"
+After=bluetooth.service
+
+[Service]
+Type=dbus
+BusName=org.nemomobile.btts.BluezPairingTool
+ExecStart=/usr/bin/btts bluez-pairing-tool --mode=server
+
+[Install]
+WantedBy=btts.target

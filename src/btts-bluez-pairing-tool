@@ -1,0 +1,175 @@
+#!/usr/bin/python2
+#
+# BTTS - BlueTooth Test Suite
+#
+# Copyright (C) 2014 Jolla Ltd.
+# Contact: Martin Kampas <martin.kampas@jollamobile.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import absolute_import, print_function, unicode_literals
+
+from gi.repository import GObject
+
+import sys
+import signal
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+from optparse import OptionParser
+
+# From bluez's tests
+import bluezutils
+
+TOOL_BUS_NAME = 'org.nemomobile.btts.BluezPairingTool'
+TOOL_PATH = '/org/nemomobile/btts/BluezPairingTool'
+TOOL_INTERFACE = 'org.nemomobile.btts.BluezPairingTool'
+
+bus = None
+
+def set_trusted(path):
+	props = dbus.Interface(bus.get_object("org.bluez", path),
+			       "org.freedesktop.DBus.Properties")
+	props.Set("org.bluez.Device1", "Trusted", True)
+
+def dev_connect(path):
+	dev = dbus.Interface(bus.get_object("org.bluez", path),
+			     "org.bluez.Device1")
+	dev.Connect()
+
+class PairingTool(dbus.service.Object):
+	class State:
+		Initial = "Initial"
+		Pairing = "Pairing"
+		Succeeded = "Succeeded"
+		Failed = "Failed"
+		Cancelling = "Cancelling"
+		Cancelled = "Cancelled"
+		CancelFailed = "CancelFailed"
+
+	state = State.Initial
+
+	#------------------------------------------------------------
+	@dbus.service.method(TOOL_INTERFACE,
+			     in_signature="s", out_signature="")
+	def Pair(self, hw_address):
+		assert self.state == self.State.Initial
+
+		self.device = bluezutils.find_device(hw_address,
+						options.adapter_pattern)
+		self.device_path = self.device.object_path
+
+		self.device.Pair(reply_handler=self.pair_reply,
+				 error_handler=self.pair_error, timeout=60000)
+		self.state = self.State.Pairing
+
+	def pair_reply(self):
+		assert self.state == self.State.Pairing
+
+		self.state = self.State.Succeeded
+
+	def pair_error(self, error):
+		assert self.state == self.State.Pairing
+
+		self.state = self.State.Failed
+
+		self.error = error.get_dbus_name()
+		if self.error == "org.freedesktop.DBus.Error.NoReply" and self.device:
+			print("Timed out. Cancelling pairing")
+			self.device.CancelPairing()
+
+	#------------------------------------------------------------
+	@dbus.service.method(TOOL_INTERFACE,
+			     in_signature="", out_signature="")
+	def Cancel(self):
+		assert self.state == self.State.Pairing
+
+		self.device.CancelPairing(reply_handler=self.cancel_reply,
+					  error_handler=self.cancel_error,
+					  timeout=60000)
+
+	def cancel_reply(self):
+		assert self.state == self.State.Cancelling
+
+		self.state = self.State.Cancelled
+
+	def cancel_error(self, error):
+		assert self.state == self.State.Cancelling
+
+		self.state = self.State.CancelFailed
+		self.error = error.get_dbus_name()
+
+	#------------------------------------------------------------
+	@dbus.service.method(TOOL_INTERFACE,
+			     in_signature="", out_signature="s")
+	def GetState(self):
+		return self.state
+
+	#------------------------------------------------------------
+	@dbus.service.method(TOOL_INTERFACE,
+			     in_signature="", out_signature="s")
+	def GetError(self):
+		assert (self.state == self.State.Failed or
+			self.state == self.State.CancelFailed)
+
+		return self.error
+
+	#------------------------------------------------------------
+	@dbus.service.method(TOOL_INTERFACE,
+			     in_signature="", out_signature="")
+	def Reset(self):
+		assert (self.state == self.State.Succeeded or
+			self.state == self.State.Failed or
+			self.state == self.State.Cancelled or
+			self.state == self.State.CancelFailed)
+
+		self.state = self.State.Initial
+		self.error = None
+		self.device = None
+		self.device_path = None
+
+if __name__ == '__main__':
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+
+	parser = OptionParser()
+	parser.add_option("-m", "--mode", action="store",
+					type="string",
+					dest="mode",
+					default="client")
+	parser.add_option("-i", "--adapter", action="store",
+					type="string",
+					dest="adapter_pattern",
+					default=None)
+	(options, args) = parser.parse_args()
+
+	if options.mode == "server":
+		mainloop = GObject.MainLoop()
+
+		name = dbus.service.BusName(TOOL_BUS_NAME, bus)
+		tool = PairingTool(bus, TOOL_PATH)
+		print("Pairing tool registered")
+
+		# TODO: signal handling
+		#signal.signal(signal.SIGINT,
+		#		lambda *args: GObject.idle_add(mainloop.quit))
+		#signal.signal(signal.SIGTERM,
+		#		lambda *args: GObject.idle_add(mainloop.quit))
+
+		mainloop.run()
+	else:
+		tool_object = bus.get_object(TOOL_BUS_NAME, TOOL_PATH)
+		tool = dbus.Interface(tool_object, TOOL_INTERFACE)
+		retv = getattr(tool, args[0])(*args[1:])
+		print(retv)
