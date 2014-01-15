@@ -1,4 +1,0 @@
-[submodule "fedora/bluez"]
-	path = fedora/bluez
-	url = git://pkgs.fedoraproject.org/bluez.git
-	branch = f20
