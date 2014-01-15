@@ -1,0 +1,74 @@
+#!/bin/bash -e
+#
+# BTTS - BlueTooth Test Suite
+#
+# Copyright (C) 2014 Jolla Ltd.
+# Contact: Martin Kampas <martin.kampas@jollamobile.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+export BTTS_COMMAND_DIR="/usr/libexec/btts"
+
+usage()
+{
+	cat <<END
+usage: btts <command> [command-args]
+
+Bluetooth Test Suite command line utility.
+
+Valid commands:
+
+$(for command in $(btts_commands); do echo -e "\t${command}"; done)
+
+Additionally it is possible to specify an absolute path to any executable in
+place of <command> in order to execute it with BTTS environment set.
+END
+}
+
+die()
+{
+	echo "$@" >&2
+	exit 1
+}
+
+btts_commands()
+{
+	find ${BTTS_COMMAND_DIR} -mindepth 1 -maxdepth 1 -type f \
+		-name 'btts-*' -executable -printf '%f\n' |sed 's/^btts-//'
+}
+
+locate_bluez_test_dir()
+{
+	(shopt -s nullglob; echo /usr/lib*/bluez/test) |head -n1 |grep . \
+		|| die "bluez-tests not installed"
+}
+
+BLUEZ_TEST_DIR=$(locate_bluez_test_dir)
+export PYTHONPATH="${BLUEZ_TEST_DIR}:${PYTHONPATH}"
+
+btts_command="$1"
+shift || true
+
+if btts_commands |grep --line-regexp -F -e "${btts_command}" -q
+then
+  exec ${BTTS_COMMAND_DIR}/btts-${btts_command} "${@}"
+fi
+
+# Allow exec arbitrary command with BTTS environment
+if [[ ${btts_command} =~ ^/ && -x ${btts_command} ]]
+then
+  exec "${btts_command}" "${@}"
+fi
+
+usage
+exit 1
