@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 #
 # BTTS - BlueTooth Test Suite
 #
@@ -28,7 +28,7 @@ import dbus.service
 import dbus.mainloop.glib
 from optparse import OptionParser
 
-sys.path.append("../bluez/test")
+# From bluez's tests
 import bluezutils
 
 BUS_NAME = 'org.bluez'
