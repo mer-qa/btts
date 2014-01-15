@@ -3,7 +3,7 @@
 Summary: Bluetooth utilities
 Name: bluez
 Version: 5.13
-Release: 1%{?dist}
+Release: 1.btts1%{?dist}
 License: GPLv2+
 Group: Applications/System
 URL: http://www.bluez.org/
@@ -91,6 +91,11 @@ Summary: Put HID proxying bluetooth HCI's into HCI mode
 Group: System Environment/Daemons
 Requires: bluez%{?_isa} = %{version}-%{release}
 
+%package tests
+Summary: Test suite for the bluez package
+Group: System Environment/Daemons
+Requires: bluez%{?_isa} = %{version}-%{release}
+
 %description cups
 This package contains the CUPS backend
 
@@ -120,6 +125,9 @@ them again. Since you cannot use your bluetooth keyboard and mouse until
 they are paired, this will require the use of a regular (wired) USB keyboard
 and mouse.
 
+%description tests
+Test suite
+
 %prep
 %setup -q
 git init
@@ -138,6 +146,7 @@ libtoolize -f -c
 autoreconf -f -i
 %configure --enable-cups --enable-tools --enable-library \
            --enable-sixaxis \
+           --enable-test \
            --with-systemdsystemunitdir=%{_unitdir} \
            --with-systemduserunitdir=%{_userunitdir}
 make %{?_smp_mflags} V=1
@@ -232,7 +241,13 @@ mkdir -p $RPM_BUILD_ROOT/%{_libdir}/bluetooth/
 %{_mandir}/man1/hid2hci.1*
 /lib/udev/rules.d/97-hid2hci.rules
 
+%files tests
+%{_libdir}/bluez/test
+
 %changelog
+* Wed Jan 15 2014 Martin Kampas <martin.kampas@jolla.com> 5.13-1.btts1
+- Bluetooth Test Suite specific modifications
+
 * Mon Jan 06 2014 Bastien Nocera <bnocera@redhat.com> 5.13-1
 - Update to 5.13
 - Enable sixaxis plugin by default
