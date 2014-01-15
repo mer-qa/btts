@@ -17,10 +17,12 @@ install:
 
 	$(INSTALL_DIR) $(LIBEXEC_DIR)
 	$(INSTALL_LIBEXEC_PROG) src/btts-bluez-agent
+	$(INSTALL_LIBEXEC_PROG) src/btts-bluez-pairing-tool
 
 	$(INSTALL_DIR) $(SYSTEMD_UNIT_DIR)
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts.target
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-bluez-agent.service
+	$(INSTALL_SYSTEMD_UNIT) systemd/btts-bluez-pairing-tool.service
 
 	$(INSTALL_DIR) $(DBUS_CONFIG_DIR)
 	$(INSTALL_DBUS_CONFIG) dbus/btts.conf
