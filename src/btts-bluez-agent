@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -11,7 +11,7 @@ import dbus.service
 import dbus.mainloop.glib
 from optparse import OptionParser
 
-sys.path.append("../bluez/test")
+# From bluez's tests
 import bluezutils
 
 BUS_NAME = 'org.bluez'
