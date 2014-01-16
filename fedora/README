@@ -1,0 +1,29 @@
+                         Fedora packaging/integration
+
+bluez/
+        - Based on Fedora official packaging. Adds items not included in
+          official Fedora packages.
+
+btts/
+        - Packaging of btts itself.
+
+ofono/
+        - ofono for Fedora (no official Fedora package available).
+
+*.rpmbuild.sh
+        - rpmbuild based scripts to build the respective packages. Result is
+          placed under the rpmbuild directory.
+
+rpmbuild/
+        - Directory used for building packages (inst. of the usual ~/rpmbuild).
+          The *.rpmbuild.sh helper scripts instruct rpmbuild to use this
+          directory.
+
+createrepo.sh
+        - Script to yumify rpmbuild/RPMS directory - this can be then
+          registered as a custom yum repository.
+
+clean.sh
+	- Script to clean built packages and intermediate files. When
+	  createrepo.sh was used before, it is automatically run to fix
+	  repodata after removing packages.
