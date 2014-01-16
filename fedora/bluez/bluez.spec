@@ -3,7 +3,7 @@
 Summary: Bluetooth utilities
 Name: bluez
 Version: 5.13
-Release: 1.btts1%{?dist}
+Release: 1%{?dist}.btts1
 License: GPLv2+
 Group: Applications/System
 URL: http://www.bluez.org/

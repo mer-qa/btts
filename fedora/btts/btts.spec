@@ -1,6 +1,6 @@
 Name:		btts
 Version:	0.1.0
-Release:	1%{?dist}
+Release:	1%{?dist}.btts1
 Summary:	Bluetooth Test Suite
 
 Group:		System/Networking

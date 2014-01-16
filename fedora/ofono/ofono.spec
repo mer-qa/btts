@@ -1,7 +1,7 @@
 Name:		ofono
 Summary:	Open Source Telephony
 Version:	1.13
-Release:	1.0
+Release:	1%{?dist}.btts1
 Group:		System/Networking
 License:	GPLv2
 URL:		http://ofono.org
