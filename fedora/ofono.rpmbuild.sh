@@ -2,13 +2,13 @@
 
 cd "$(dirname "$0")"
 
+mkdir -p rpmbuild/{BUILD{,ROOT},{,S}RPMS}
+
 spectool --get-files --directory ofono ofono/ofono.spec
 
 sudo yum-builddep ofono/ofono.spec
 
-mkdir -p ofono.rpmbuild/{BUILD{,ROOT},{,S}RPMS}
-
-rpmbuild --define "_topdir $(readlink -f ofono.rpmbuild)" \
+rpmbuild --define "_topdir $(readlink -f rpmbuild)" \
 	--define "_sourcedir $(readlink -f ofono)" \
 	--define "_specdir $(readlink -f ofono)" \
 	-bb ofono/ofono.spec
