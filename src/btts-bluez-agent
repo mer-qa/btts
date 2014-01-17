@@ -289,24 +289,27 @@ class Agent(dbus.service.Object):
 			     in_signature="s", out_signature="")
 	def FinishActiveCall(self, reply):
 		print("AGENT_TEST_INTERFACE.FinishActiveCall ()")
-		self.state.active_call.finish(reply)
+		active_call = self.state.active_call
 		self.state.active_call = NoCall()
+		active_call.finish(reply)
 
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="")
 	def RejectActiveCall(self):
 		print("AGENT_TEST_INTERFACE.RejectActiveCall ()")
-		self.state.active_call.reject()
+		active_call = self.state.active_call
 		self.state.active_call = NoCall()
+		active_call.reject()
 
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="")
 	def CancelActiveCall(self):
 		print("AGENT_TEST_INTERFACE.CancelActiveCall ()")
-		self.state.active_call.cancel()
+		active_call = self.state.active_call
 		self.state.active_call = NoCall()
+		active_call.cancel()
 
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_TEST_INTERFACE,
