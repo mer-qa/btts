@@ -136,7 +136,7 @@ class AuthorizeServiceCall(ActiveCall):
 	def __init__(self, device, uuid, reply_handler, error_handler):
 		ActiveCall.__init__(self, reply_handler, error_handler)
 		self.arg_device = device
-		selg.arg_uuid = uuid
+		self.arg_uuid = uuid
 
 	def finish(self, reply):
 		assert not reply
