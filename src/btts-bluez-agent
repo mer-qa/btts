@@ -31,6 +31,8 @@ from optparse import OptionParser
 # From bluez's tests
 import bluezutils
 
+from btts_utils import dbus_service_method
+
 BUS_NAME = 'org.bluez'
 AGENT_INTERFACE = 'org.bluez.Agent1'
 
@@ -177,14 +179,14 @@ class Agent(dbus.service.Object):
 
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_INTERFACE,
+	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="", out_signature="")
 	def Release(self):
 		print("AGENT_INTERFACE.Release ()")
 		self.state.released = True
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_INTERFACE,
+	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="o", out_signature="s",
 			     async_callbacks=('reply_handler', 'error_handler'))
 	def RequestPinCode(self, device, reply_handler, error_handler):
@@ -194,7 +196,7 @@ class Agent(dbus.service.Object):
 							    error_handler)
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_INTERFACE,
+	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="os", out_signature="",
 			     async_callbacks=('reply_handler', 'error_handler'))
 	def DisplayPinCode(self, device, pincode, reply_handler,
@@ -205,7 +207,7 @@ class Agent(dbus.service.Object):
 							    error_handler)
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_INTERFACE,
+	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="o", out_signature="u",
 			     async_callbacks=('reply_handler', 'error_handler'))
 	def RequestPasskey(self, device, reply_handler, error_handler):
@@ -215,7 +217,7 @@ class Agent(dbus.service.Object):
 							    error_handler)
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_INTERFACE,
+	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="ouq", out_signature="")
 	def DisplayPasskey(self, device, passkey, entered):
 		print("AGENT_INTERFACE.DisplayPasskey (%s, %06u entered %u)" %
@@ -223,7 +225,7 @@ class Agent(dbus.service.Object):
 		self.state.passkey_displayed = (passkey, entered)
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_INTERFACE,
+	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="ou", out_signature="",
 			     async_callbacks=('reply_handler', 'error_handler'))
 	def RequestConfirmation(self, device, passkey, reply_handler,
@@ -235,7 +237,7 @@ class Agent(dbus.service.Object):
 								 error_handler)
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_INTERFACE,
+	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="o", out_signature="",
 			     async_callbacks=('reply_handler', 'error_handler'))
 	def RequestAuthorization(self, device, reply_handler, error_handler):
@@ -245,7 +247,7 @@ class Agent(dbus.service.Object):
 								  error_handler)
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_INTERFACE,
+	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="os", out_signature="",
 			     async_callbacks=('reply_handler', 'error_handler'))
 	def AuthorizeService(self, device, uuid, reply_handler, error_handler):
@@ -255,7 +257,7 @@ class Agent(dbus.service.Object):
 							      error_handler)
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_INTERFACE,
+	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="", out_signature="",
 			     async_callbacks=('reply_handler', 'error_handler'))
 	def Cancel(self, reply_handler, error_handler):
@@ -265,28 +267,28 @@ class Agent(dbus.service.Object):
 		self.state.active_call = CancelCall(reply_handler, error_handler)
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_TEST_INTERFACE,
+	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="i")
 	def IsReleased(self):
 		print("AGENT_TEST_INTERFACE.IsReleased ()")
 		return self.state.active_call.released
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_TEST_INTERFACE,
+	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="(ii)")
 	def GetPasskeyDisplayed(self):
 		print("AGENT_TEST_INTERFACE.PasskeyDisplayed ()")
 		return self.state.active_call.passkey_displayed
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_TEST_INTERFACE,
+	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="s")
 	def GetActiveCall(self):
 		print("AGENT_TEST_INTERFACE.ActiveCall ()")
 		return self.state.active_call.name()
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_TEST_INTERFACE,
+	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="s", out_signature="")
 	def FinishActiveCall(self, reply):
 		print("AGENT_TEST_INTERFACE.FinishActiveCall ()")
@@ -294,7 +296,7 @@ class Agent(dbus.service.Object):
 		self.state.active_call = NoCall()
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_TEST_INTERFACE,
+	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="")
 	def RejectActiveCall(self):
 		print("AGENT_TEST_INTERFACE.RejectActiveCall ()")
@@ -302,7 +304,7 @@ class Agent(dbus.service.Object):
 		self.state.active_call = NoCall()
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_TEST_INTERFACE,
+	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="")
 	def CancelActiveCall(self):
 		print("AGENT_TEST_INTERFACE.CancelActiveCall ()")
@@ -310,13 +312,13 @@ class Agent(dbus.service.Object):
 		self.state.active_call = NoCall()
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_TEST_INTERFACE,
+	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="s")
 	def GetCapability(self):
 		print("AGENT_TEST_INTERFACE.Capability ()")
 
 	#------------------------------------------------------------
-	@dbus.service.method(AGENT_TEST_INTERFACE,
+	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="s", out_signature="")
 	def SetCapability(self, capability):
 		print("AGENT_TEST_INTERFACE.SetCapability (%s)" % (capability))

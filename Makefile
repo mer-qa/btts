@@ -16,6 +16,7 @@ install:
 	$(INSTALL_BIN_PROG) src/btts
 
 	$(INSTALL_DIR) $(LIBEXEC_DIR)
+	$(INSTALL_LIBEXEC_PROG) src/btts_utils.py
 	$(INSTALL_LIBEXEC_PROG) src/btts-bluez-agent
 	$(INSTALL_LIBEXEC_PROG) src/btts-bluez-pairing-tool
 
