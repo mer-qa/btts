@@ -11,9 +11,6 @@ import dbus.service
 import dbus.mainloop.glib
 from optparse import OptionParser
 
-# From bluez's tests
-import bluezutils
-
 from btts_utils import dbus_service_method
 
 BUS_NAME = 'org.bluez'
