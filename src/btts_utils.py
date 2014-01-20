@@ -29,7 +29,7 @@ def dbus_service_method(dbus_interface, **kwargs):
 		@wraps(func)
 		def logger(*args, **kwargs):
 			try:
-				print("%s.%s(\n\t%s)" % (dbus_interface,
+				print("CALL %s.%s(\n\t%s)" % (dbus_interface,
 							func.__name__,
 							",\n\t".join(map(str, args))))
 				return dbus_wrapped(*args, **kwargs)
@@ -37,6 +37,26 @@ def dbus_service_method(dbus_interface, **kwargs):
 				exc_type, exc_value, exc_traceback = sys.exc_info()
 				print_exception(exc_type, exc_value, exc_traceback)
 				print("Exception raised upon D-Bus call", file=sys.stderr)
+				raise e
+		return logger
+
+	return ctor
+
+def dbus_service_signal(dbus_interface, **kwargs):
+	def ctor(func):
+		dbus_wrapped = dbus.service.signal(dbus_interface, **kwargs)(func)
+		@wraps(func)
+		def logger(*args, **kwargs):
+			try:
+				print("EMIT %s.%s(\n\t%s)" % (dbus_interface,
+							func.__name__,
+							",\n\t".join(map(str, args))))
+				return dbus_wrapped(*args, **kwargs)
+			except Exception as e:
+				exc_type, exc_value, exc_traceback = sys.exc_info()
+				print_exception(exc_type, exc_value, exc_traceback)
+				print("Exception raised upon D-Bus signal emission",
+						file=sys.stderr)
 				raise e
 		return logger
 
