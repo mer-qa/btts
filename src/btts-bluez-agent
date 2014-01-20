@@ -11,7 +11,7 @@ import dbus.service
 import dbus.mainloop.glib
 from optparse import OptionParser
 
-from btts_utils import dbus_service_method
+from btts_utils import dbus_service_method, dbus_service_signal
 
 BUS_NAME = 'org.bluez'
 AGENT_INTERFACE = 'org.bluez.Agent1'
@@ -130,9 +130,10 @@ class CancelCall(ActiveCall):
 		assert not reply
 		self.reply_handler()
 
-class State:
+class State(object):
 
-	def __init__(self):
+	def __init__(self, agent):
+		self.agent = agent
 		self.released = False
 		self.passkey_displayed = (0, 0)
 		self._active_call = NoCall()
@@ -146,6 +147,7 @@ class State:
 		assert (isinstance(self._active_call, NoCall) or
 			isinstance(call, NoCall))
 		self._active_call = call
+		self.agent.ActiveCallChanged(self._active_call.name())
 
 class Agent(dbus.service.Object):
 
@@ -255,6 +257,11 @@ class Agent(dbus.service.Object):
 			     in_signature="", out_signature="s")
 	def GetActiveCall(self):
 		return self.state.active_call.name()
+
+	@dbus_service_signal(AGENT_TEST_INTERFACE,
+			     signature="s")
+	def ActiveCallChanged(self, active_call):
+		pass
 
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_TEST_INTERFACE,
