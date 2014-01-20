@@ -13,6 +13,9 @@ Requires:	ofono
 Requires:	pulseaudio
 Requires:	pulseaudio-module-bluetooth
 Requires:	pulseaudio-utils
+BuildRequires:	python2-devel
+
+%global __python %{__python2}
 
 %description
 Description: %{summary}
