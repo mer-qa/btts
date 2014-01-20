@@ -59,7 +59,9 @@ class PairingTool(dbus.service.Object):
 		Cancelled = "Cancelled"
 		CancelFailed = "CancelFailed"
 
-	state = State.Initial
+	def __init__(self, bus, path):
+		dbus.service.Object.__init__(self, bus, path)
+		self.state = self.State.Initial
 
 	#------------------------------------------------------------
 	@dbus_service_method(TOOL_INTERFACE,
