@@ -5,7 +5,7 @@ Summary:	Bluetooth Test Suite
 
 Group:		System/Networking
 License:	GPLv2
-URL:		http://github.com/nemomobile/btts
+URL:		http://github.com/mer-qa/btts
 Source0:	%{name}-%{version}.tar.gz
 
 Requires:	bluez

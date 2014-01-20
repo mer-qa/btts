@@ -16,9 +16,9 @@ from btts_utils import dbus_service_method
 BUS_NAME = 'org.bluez'
 AGENT_INTERFACE = 'org.bluez.Agent1'
 
-AGENT_BUS_NAME = 'org.nemomobile.btts.BluezAgent'
-AGENT_PATH = "/org/nemomobile/btts/BluezAgent"
-AGENT_TEST_INTERFACE = 'org.nemomobile.btts.BluezAgent'
+AGENT_BUS_NAME = 'org.merproject.btts.BluezAgent'
+AGENT_PATH = "/org/merproject/btts/BluezAgent"
+AGENT_TEST_INTERFACE = 'org.merproject.btts.BluezAgent'
 
 bus = None
 device_obj = None
