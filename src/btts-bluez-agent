@@ -131,9 +131,11 @@ class CancelCall(ActiveCall):
 		self.reply_handler()
 
 class State:
-	released = False
-	passkey_displayed = (0, 0)
-	_active_call = NoCall()
+
+	def __init__(self):
+		self.released = False
+		self.passkey_displayed = (0, 0)
+		self._active_call = NoCall()
 
 	@property
 	def active_call(self):
@@ -146,11 +148,12 @@ class State:
 		self._active_call = call
 
 class Agent(dbus.service.Object):
-	state = State()
-	capability = "KeyboardDisplay"
 
 	def __init__(self, bus, path):
 		dbus.service.Object.__init__(self, bus, path)
+		self.state = State(self)
+		self.capability = "KeyboardDisplay"
+
 		obj = bus.get_object(BUS_NAME, "/org/bluez")
 		self.manager = dbus.Interface(obj, "org.bluez.AgentManager1")
 		self.manager.RegisterAgent(self.__dbus_object_path__, self.capability)
