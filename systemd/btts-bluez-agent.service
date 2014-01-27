@@ -9,4 +9,4 @@ ExecStart=/usr/bin/btts bluez-agent --mode=server
 User=btts
 
 [Install]
-WantedBy=btts.target
+RequiredBy=btts.target
