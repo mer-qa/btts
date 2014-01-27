@@ -7,6 +7,7 @@ Group:		System/Networking
 License:	GPLv2
 URL:		http://github.com/mer-qa/btts
 Source0:	%{name}-%{version}.tar.gz
+Source1:	btts-pulseaudio.service
 
 Requires:	bluez
 Requires:	ofono
@@ -33,6 +34,7 @@ make %{?_smp_mflags}
 %install
 make install DESTDIR=%{buildroot}
 
+%{__install} -m 0664 %{SOURCE1} %{buildroot}%{_unitdir}/
 
 %files
 %doc README
