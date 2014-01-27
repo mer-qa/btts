@@ -6,6 +6,7 @@ After=bluetooth.service
 Type=dbus
 BusName=org.merproject.btts.BluezPairingTool
 ExecStart=/usr/bin/btts bluez-pairing-tool --mode=server
+User=btts
 
 [Install]
 WantedBy=btts.target
