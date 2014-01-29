@@ -1,5 +1,7 @@
 [Unit]
 Description="Bluetooth test suite"
+After=ofono.service
+Requires=ofono.service
 
 [Install]
 WantedBy=multi-user.target
