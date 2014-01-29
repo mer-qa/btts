@@ -1,1 +1,72 @@
-BTTS (BlueTooth Test Suite)
+                          BTTS (BlueTooth Test Suite)
+
+What does BTTS do:
+
+        1) Integrates several software services to simulate certain Bluetooth
+           hardware devices (e.g. audio device, hansfree etc.)
+        2) Provides set of stateful services to inspect/track the state of the
+           simulated device and control it.
+        3) Provides set of command line tools to talk to these services during
+           test execution.
+
+
+OVERVIEW
+
+Test Executor directs the Tested Device to interact with the Bluetooth services
+run on the BTTS Node and invokes BTTS Tools to execute and prove state changes
+according to a given Test Definition.
+
+                                                  +---------------+
+                             +----------+         |   BTTS Node   |
+     +----------             |          |   SSH   |               |
+     |          |\           |   Test   | ----------> BTTS tools  |
+     |Test       | <-------- | Executor |         |       |       |
+     |Definition |           |          |         |       |       |
+     |           |           +----------+         |       V       |
+     +-----------+                |               | BTTS services |
+                                  |               |       ^       |
+                                  |               |       |       |
+                                  |               |       V       |
+                                  |               |    BT stack   |
+                                  V               |       ^       |
+                             +----------+         |       |       |
+                             | Tested   |    BT   |       V       |
+                             |  Device  | <---------> BT dongle   |
+                             | (Phone)  |         |               |
+                             +----------+         +---------------+
+
+
+DEPLOYMENT
+
+BTTS provides integration with Fedora 20. To simplify deployment it comes with
+script to setup a libvirt managed virtual machine running Fedora 20 with all
+necessary packages present.
+
+Depending on your host setup, the minimal set of arguments might work for you.
+(Run ./fedora/kickstart.sh --help for details.)
+
+(host)$ ./fedora/kickstart.sh <vendor-id>:<device-id> pool=default
+
+Replace <vendor-id>:<device-id> with the ID pair of the USB Bluetooth device
+you want to be made available to the virtual machine. More devices can be
+specified as a comma separated list of ID pairs.
+
+When installation is finished and the machine successfully rebooted, hit Ctrl-]
+to leave the serial console and log in via SSH using the password you provided
+during kickstart.sh execution. (Provided mDNS is setup on your host).
+
+(host)$ ssh btts@btts.local
+
+Now install BTTS inside the virtual machine.
+
+(guest)$ git clone https://github.com/mer-qa/btts.git
+(guest)$ cd btts
+(guest)$ ./fedora/rebuildall.sh
+    (Answer Yes to register local yum repository)
+(guest)$ ./fedora/reinstallall.sh
+(guest)$ sudo systemctl start btts.target
+
+
+EXAMPLE TEST EXECUTION
+
+...TODO...
