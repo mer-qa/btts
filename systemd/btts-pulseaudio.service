@@ -1,0 +1,16 @@
+[Unit]
+After=sound.target btts-dbus.socket
+Requires=sound.target btts-dbus.socket
+Description=Bluetooth Test Suite - PulseAudio instance
+
+[Service]
+# No way to tell systemd we use a special bus instance
+#Type=dbus
+#BusName=org.pulseaudio.Server
+#BusName=org.PulseAudio1
+ExecStart=/usr/bin/pulseaudio
+# Not using `pulseaudio --kill` as it results in non zero exit code
+ExecStop=/usr/bin/pactl exit
+Restart=always
+User=btts
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/btts/dbus/btts_bus_socket

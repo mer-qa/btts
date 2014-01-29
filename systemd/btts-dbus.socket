@@ -1,0 +1,6 @@
+[Unit]
+Description=Bluetooth Test Suite - D-Bus Message Bus Socket
+Before=sockets.target
+
+[Socket]
+ListenStream=/run/btts/dbus/btts_bus_socket
