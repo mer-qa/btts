@@ -5,6 +5,11 @@ repo_dir="$(readlink -f $(dirname "$0"))/rpmbuild/RPMS"
 repo_url="file://${repo_dir}"
 repo_file="/etc/yum.repos.d/${repo_name}.repo"
 
+if [[ "${1}" == "--as-needed" && ! -d "${repo_dir}/repodata" ]]
+then
+        exit 0
+fi
+
 createrepo "${repo_dir}"
 
 repo_config="\

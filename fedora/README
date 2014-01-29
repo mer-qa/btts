@@ -1,5 +1,23 @@
                          Fedora packaging/integration
 
+BASIC WORKFLOW
+==============
+
+(Re)build and (re)install all packages
+
+        ./rebuildall.sh
+                (Answer Yes to register local yum repository)
+        ./reinstallall.sh
+
+Rebuild and reinstall a single package
+
+        ./bluez.rpmbuild.sh
+        ./reinstallall.sh
+
+
+CONTENT OF THIS DIRECTORY
+=========================
+
 bluez/
         - Based on Fedora official packaging. Adds items not included in
           official Fedora packages.
@@ -19,11 +37,18 @@ rpmbuild/
           The *.rpmbuild.sh helper scripts instruct rpmbuild to use this
           directory.
 
+rebuildall.sh
+        - Script to automatically (re)build all packages
+
 createrepo.sh
         - Script to yumify rpmbuild/RPMS directory - this can be then
-          registered as a custom yum repository.
+          registered as a custom yum repository. Automatically invoked by
+          rebuildall.sh.
+
+reinstallall.sh
+        - Script to automatically (re)install all packages. It installs from a
+          yum repository named 'btts-local' (previously created and registered
+          with createrepo.sh.)
 
 clean.sh
-	- Script to clean built packages and intermediate files. When
-	  createrepo.sh was used before, it is automatically run to fix
-	  repodata after removing packages.
+        - Script to clean built packages and intermediate files.
