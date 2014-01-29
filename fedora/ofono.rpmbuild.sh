@@ -12,3 +12,5 @@ rpmbuild --define "_topdir $(readlink -f rpmbuild)" \
 	--define "_sourcedir $(readlink -f ofono)" \
 	--define "_specdir $(readlink -f ofono)" \
 	-bb ofono/ofono.spec
+
+./createrepo.sh --as-needed
