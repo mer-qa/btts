@@ -16,3 +16,5 @@ rpmbuild --define "_topdir $(readlink -f rpmbuild)" \
 	--define "_sourcedir $(readlink -f btts)" \
 	--define "_specdir $(readlink -f btts)" \
 	-bb btts/btts.spec
+
+./createrepo.sh --as-needed

@@ -12,3 +12,5 @@ rpmbuild --define "_topdir $(readlink -f rpmbuild)" \
 	--define "_sourcedir $(readlink -f bluez)" \
 	--define "_specdir $(readlink -f bluez)" \
 	-bb bluez/bluez.spec
+
+./createrepo.sh --as-needed
