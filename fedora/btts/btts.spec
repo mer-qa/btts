@@ -7,7 +7,6 @@ Group:		System/Networking
 License:	GPLv2
 URL:		http://github.com/mer-qa/btts
 Source0:	%{name}-%{version}.tar.gz
-Source1:	btts-pulseaudio.service
 
 Requires:	bluez
 Requires:	ofono
@@ -34,14 +33,12 @@ make %{?_smp_mflags}
 %install
 make install DESTDIR=%{buildroot}
 
-%{__install} -m 0664 %{SOURCE1} %{buildroot}%{_unitdir}/
-
 %files
 %doc README
 %{_bindir}/btts
+%{_exec_prefix}/lib/tmpfiles.d/*
 %{_libexecdir}/%{name}/*
-%{_unitdir}/*.service
-%{_unitdir}/btts.target
+%{_unitdir}/*
 %{_sysconfdir}/dbus-1/system.d/*.conf
 
 
@@ -54,6 +51,7 @@ exit 0
 
 
 %post
+systemd-tmpfiles --create btts.conf
 systemctl enable $(systemctl list-unit-files |awk '$1 ~ "^btts" {print $1}')
 
 

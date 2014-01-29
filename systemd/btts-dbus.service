@@ -1,0 +1,9 @@
+[Unit]
+Description=Bluetooth Test Suite - D-Bus Message Bus
+Requires=btts-dbus.socket
+
+[Service]
+ExecStart=/usr/bin/dbus-daemon --session --address=systemd: --nofork --nopidfile --systemd-activation
+ExecReload=/usr/bin/dbus-send --print-reply --session --type=method_call --dest=org.freedesktop.DBus / org.freedesktop.DBus.ReloadConfig
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/btts/dbus/btts_bus_socket
+User=btts

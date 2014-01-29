@@ -6,6 +6,7 @@ After=bluetooth.service
 Type=dbus
 BusName=org.merproject.btts.BluezAgent
 ExecStart=/usr/bin/btts bluez-agent --mode=server
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/btts/dbus/btts_bus_socket
 User=btts
 
 [Install]
