@@ -53,4 +53,8 @@ getent passwd btts >/dev/null || \
 exit 0
 
 
+%post
+systemctl enable $(systemctl list-unit-files |awk '$1 ~ "^btts" {print $1}')
+
+
 %changelog
