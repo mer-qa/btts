@@ -1,5 +1,5 @@
 [Unit]
-Description="Bluetooth test suite"
+Description=Bluetooth test suite
 After=ofono.service btts-pulseaudio.service
 Requires=ofono.service btts-pulseaudio.service
 
