@@ -1,5 +1,5 @@
 [Unit]
-Description="Bluetooth test suite - bluez agent"
+Description=Bluetooth test suite - bluez agent
 After=bluetooth.service
 
 [Service]
