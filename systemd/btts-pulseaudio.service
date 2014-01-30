@@ -2,6 +2,7 @@
 After=sound.target btts-dbus.socket
 Requires=sound.target btts-dbus.socket
 Description=Bluetooth Test Suite - PulseAudio instance
+StopWhenUnneeded=True
 
 [Service]
 # No way to tell systemd we use a special bus instance
