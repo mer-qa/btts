@@ -1,6 +1,7 @@
 [Unit]
 Description=Bluetooth test suite - bluez agent
 After=bluetooth.service
+StopWhenUnneeded=True
 
 [Service]
 Type=dbus

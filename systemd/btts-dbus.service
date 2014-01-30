@@ -1,6 +1,7 @@
 [Unit]
 Description=Bluetooth Test Suite - D-Bus Message Bus
 Requires=btts-dbus.socket
+StopWhenUnneeded=True
 
 [Service]
 ExecStart=/usr/bin/dbus-daemon --session --address=systemd: --nofork --nopidfile --systemd-activation
