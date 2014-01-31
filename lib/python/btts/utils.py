@@ -5,6 +5,15 @@ import dbus.service
 import sys
 from traceback import print_exception
 
+# For argument parsing
+def boolean(string):
+    if string in ['true', 'yes', '1', 'on']:
+        return True
+    elif string in ['false', 'no', '0', 'off']:
+        return False
+    else:
+        raise TypeError
+
 def dbus_service_method(dbus_interface, **kwargs):
 	def ctor(func):
 		dbus_wrapped = dbus.service.method(dbus_interface, **kwargs)(func)
