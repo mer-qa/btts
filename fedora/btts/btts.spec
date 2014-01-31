@@ -9,10 +9,14 @@ URL:		http://github.com/mer-qa/btts
 Source0:	%{name}-%{version}.tar.gz
 
 Requires:	bluez
+Requires:	dconf
 Requires:	ofono
 Requires:	pulseaudio
 Requires:	pulseaudio-module-bluetooth
 Requires:	pulseaudio-utils
+Requires:	python3
+Requires:	python3-dbus
+Requires:	python3-gobject
 BuildRequires:	python2-devel
 Requires(pre): shadow-utils
 
@@ -40,8 +44,10 @@ make install DESTDIR=%{buildroot}
 %{_exec_prefix}/lib/btts/*
 %{_libexecdir}/%{name}/*
 %{_datadir}/%{name}/*
+%{_datadir}/glib-2.0/schemas/*
 %{_unitdir}/*
-%{_sysconfdir}/dbus-1/system.d/*.conf
+%config %{_sysconfdir}/dbus-1/system.d/*.conf
+%config(noreplace) %{_sysconfdir}/%{name}/adapters
 
 
 %pre
@@ -55,6 +61,16 @@ exit 0
 %post
 systemd-tmpfiles --create btts.conf
 systemctl enable $(systemctl list-unit-files |awk '$1 ~ "^btts" {print $1}')
+
+
+%postun
+if [ $1 -eq 0 ] ; then
+    /usr/bin/glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
+fi
+
+
+%posttrans
+/usr/bin/glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 
 
 %changelog
