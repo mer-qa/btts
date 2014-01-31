@@ -38,6 +38,7 @@ make install DESTDIR=%{buildroot}
 %{_bindir}/btts
 %{_exec_prefix}/lib/tmpfiles.d/*
 %{_libexecdir}/%{name}/*
+%{_datadir}/%{name}/*
 %{_unitdir}/*
 %{_sysconfdir}/dbus-1/system.d/*.conf
 

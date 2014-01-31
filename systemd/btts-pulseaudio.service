@@ -9,9 +9,10 @@ StopWhenUnneeded=True
 #Type=dbus
 #BusName=org.pulseaudio.Server
 #BusName=org.PulseAudio1
-ExecStart=/usr/bin/pulseaudio
+ExecStart=/usr/bin/pulseaudio --use-pid-file=false -n --file=/usr/share/btts/pulse/default.pa
 # Not using `pulseaudio --kill` as it results in non zero exit code
 ExecStop=/usr/bin/pactl exit
 Restart=always
 User=btts
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/btts/dbus/btts_bus_socket
+Environment=PULSE_SERVER=unix:/run/btts/pulse/native
