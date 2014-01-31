@@ -37,6 +37,7 @@ make install DESTDIR=%{buildroot}
 %doc README
 %{_bindir}/btts
 %{_exec_prefix}/lib/tmpfiles.d/*
+%{_exec_prefix}/lib/btts/*
 %{_libexecdir}/%{name}/*
 %{_datadir}/%{name}/*
 %{_unitdir}/*

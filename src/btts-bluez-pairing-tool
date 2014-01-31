@@ -14,7 +14,7 @@ from optparse import OptionParser
 # From bluez's tests
 import bluezutils
 
-from btts_utils import dbus_service_method
+from btts.utils import dbus_service_method
 
 TOOL_BUS_NAME = 'org.merproject.btts.BluezPairingTool'
 TOOL_PATH = '/org/merproject/btts/BluezPairingTool'

@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
 export BTTS_COMMAND_DIR="/usr/libexec/btts"
+export BTTS_PYTHON_LIB_DIR="/usr/lib/btts/python"
 
 usage()
 {
@@ -40,6 +41,8 @@ BLUEZ_TEST_DIR=$(locate_bluez_test_dir)
 export PYTHONPATH="${BLUEZ_TEST_DIR}:${PYTHONPATH}"
 
 . ${BTTS_COMMAND_DIR}/environment.sh
+
+export PYTHONPATH="${BTTS_PYTHON_LIB_DIR}:${PYTHONPATH}"
 
 btts_command="$1"
 shift || true

@@ -11,7 +11,7 @@ import dbus.service
 import dbus.mainloop.glib
 from optparse import OptionParser
 
-from btts_utils import dbus_service_method, dbus_service_signal
+from btts.utils import dbus_service_method, dbus_service_signal
 
 BUS_NAME = 'org.bluez'
 AGENT_INTERFACE = 'org.bluez.Agent1'
