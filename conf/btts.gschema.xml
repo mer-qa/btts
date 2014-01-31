@@ -1,0 +1,13 @@
+<schemalist>
+  <schema id="org.merproject.btts" path="/org/merproject/btts/">
+
+    <key name="adapter" type="s">
+      <default>"hci0"</default>
+      <summary>Bluetooth adapter to work with</summary>
+      <description>
+        Specified with HCI device name (e.g. "hci0".)
+      </description>
+    </key>
+
+  </schema>
+</schemalist>

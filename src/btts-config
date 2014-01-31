@@ -1,0 +1,144 @@
+#!/usr/bin/python3
+#
+# BTTS - BlueTooth Test Suite
+#
+# Copyright (C) 2014 Jolla Ltd.
+# Contact: Martin Kampas <martin.kampas@jollamobile.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+from   contextlib import ContextDecorator
+import dbus
+import sys
+
+import btts
+
+class Failure(Exception):
+    pass
+
+class BadUsage(Exception):
+    pass
+
+class failure_on(ContextDecorator):
+    def __init__(self, exc_types):
+        ContextDecorator.__init__(self)
+        self.exc_types = exc_types
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type and any(map(lambda t: issubclass(exc_type, t), self.exc_types)):
+            raise Failure(str(exc_value)).with_traceback(traceback)
+        return False
+
+class bad_usage_on(ContextDecorator):
+    def __init__(self, exc_types):
+        ContextDecorator.__init__(self)
+        self.exc_types = exc_types
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type and any(map(lambda t: issubclass(exc_type, t), self.exc_types)):
+            raise BadUsage(str(exc_value)).with_traceback(traceback)
+        return False
+
+@failure_on([btts.AdapterManager.Error])
+@bad_usage_on([btts.AdapterManager.NoSuchAdapterError])
+def cmd_adapter(args):
+    adapter_manager = btts.AdapterManager()
+
+    if args.adapter == None:
+        print(adapter_manager.get_adapter())
+    else:
+        adapter_manager.set_adapter(args.adapter)
+
+@failure_on([btts.AdapterManager.Error])
+def cmd_powered(args):
+    adapter_manager = btts.AdapterManager()
+
+    adapter = adapter_manager.get_adapter_no_alias()
+
+    bus = dbus.SystemBus()
+    proxy = bus.get_object('org.bluez', '/org/bluez/' + adapter)
+    properties = dbus.Interface(
+        proxy, dbus_interface='org.freedesktop.DBus.Properties')
+
+    if args.powered == None:
+        print(["false", "true"][properties.Get("org.bluez.Adapter1",
+                                               "Powered")])
+    else:
+        properties.Set("org.bluez.Adapter1", "Powered",
+                       args.powered)
+
+# Main argument parser
+main_parser = argparse.ArgumentParser(
+        prog='btts config',
+        description='Bluetooth Test Suite configuration and management utility.')
+subparsers = main_parser.add_subparsers(
+        dest='subcommand', title='subcommands',
+        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
+            on the given subcommand.''')
+
+# Argument parser for 'adapter' subcommand
+adapter_parser = subparsers.add_parser(
+        'adapter',
+        help='Get/Set adapter to work with',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='''\
+Get/Set adapter to work with.
+
+Device aliases can be defined in /etc/btts/adapters.  Content of this file
+is newline separated list of records.  Each record consists of a space
+separated pair of <bd_address> and <alias>. Lines starting with "#" are
+ignored.
+''')
+adapter_parser.add_argument(
+        'adapter', nargs='?', type=str,
+        help='Device name (e.g. "hci0") or alias (see above)')
+adapter_parser.set_defaults(func=cmd_adapter)
+
+# Argument parser for 'powered' subcommand
+powered_parser = subparsers.add_parser(
+        'powered',
+        help='Get/Set adapter powered state',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='''\
+Get/Set adapter powered state.
+
+With no argument it prints "true" or "false" to indicate current adapter state.
+
+This is equivalent to access the org.bluez.Adapter1.Powered D-Bus property.
+''')
+powered_parser.add_argument(
+        'powered', nargs='?', type=btts.utils.boolean,
+        help='Device powered state (true|false)')
+powered_parser.set_defaults(func=cmd_powered)
+
+args = main_parser.parse_args()
+if not args.subcommand:
+    main_parser.print_usage()
+    sys.exit(1)
+
+try:
+    args.func(args)
+except BadUsage as e:
+    print(e, file=sys.stderr)
+    main_parser.print_usage()
+    sys.exit(1)
+except Failure as e:
+    print("Failed: %s" % (e), file=sys.stderr)
+    sys.exit(1)
