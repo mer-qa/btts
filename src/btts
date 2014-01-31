@@ -55,8 +55,8 @@ locate_bluez_test_dir()
 
 BLUEZ_TEST_DIR=$(locate_bluez_test_dir)
 export PYTHONPATH="${BLUEZ_TEST_DIR}:${PYTHONPATH}"
-export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/btts/dbus/btts_bus_socket
-export PULSE_SERVER=unix:/run/btts/pulse/native
+
+. ${BTTS_COMMAND_DIR}/environment.sh
 
 btts_command="$1"
 shift || true
