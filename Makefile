@@ -34,4 +34,4 @@ install:
 	$(INSTALL_TMPFILES_D_CONFIG) systemd/tmpfiles.d/btts.conf
 
 	$(INSTALL_DIR) $(DBUS_CONFIG_DIR)
-	$(INSTALL_DBUS_CONFIG) dbus/btts.conf
+	$(INSTALL_DBUS_CONFIG) conf/dbus/btts.conf
