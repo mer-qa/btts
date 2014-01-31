@@ -14,5 +14,4 @@ ExecStart=/usr/bin/pulseaudio --use-pid-file=false -n --file=/usr/share/btts/pul
 ExecStop=/usr/bin/pactl exit
 Restart=always
 User=btts
-Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/btts/dbus/btts_bus_socket
-Environment=PULSE_SERVER=unix:/run/btts/pulse/native
+EnvironmentFile=/usr/libexec/btts/environment

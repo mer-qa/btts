@@ -7,7 +7,7 @@ StopWhenUnneeded=True
 Type=dbus
 BusName=org.merproject.btts.BluezPairingTool
 ExecStart=/usr/bin/btts bluez-pairing-tool --mode=server
-Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/btts/dbus/btts_bus_socket
+EnvironmentFile=/usr/libexec/btts/environment
 User=btts
 
 [Install]

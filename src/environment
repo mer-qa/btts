@@ -1,0 +1,8 @@
+# See 'EnvironmentFile' in systemd.exec(5)
+# Keep in sync with environment.sh
+
+# Keep in sync with systemd/btts-dbus.socket
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/btts/dbus/btts_bus_socket
+
+# Keep in sync with conf/pulse/default.pa
+PULSE_SERVER=unix:/run/btts/pulse/native
