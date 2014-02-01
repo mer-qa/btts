@@ -34,7 +34,6 @@ install:
 
 	$(INSTALL_DIR) $(SYSTEMD_UNIT_DIR)
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts.target
-	$(INSTALL_SYSTEMD_UNIT) systemd/btts-dbus.socket
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-dbus.service
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-pulseaudio.service
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-bluez-agent.service
