@@ -1,7 +1,6 @@
 [Unit]
 Description=Bluetooth test suite
 Wants=ofono.service btts-pulseaudio.service
-# dbus.service StopWhenUnneeded=true
 Requires=btts-dbus.service
 
 [Install]

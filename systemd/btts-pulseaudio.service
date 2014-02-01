@@ -1,6 +1,6 @@
 [Unit]
-After=sound.target btts-dbus.socket
-Requires=sound.target btts-dbus.socket
+After=sound.target btts-dbus.service
+Requires=sound.target btts-dbus.service
 Description=Bluetooth Test Suite - PulseAudio instance
 StopWhenUnneeded=True
 
