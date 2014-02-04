@@ -36,6 +36,7 @@ install:
 	$(INSTALL_DIR) $(PYTHON_PKG_DIR)
 	$(INSTALL_PYTHON_MOD) lib/python/btts/__init__.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/adaptermanager.py
+	$(INSTALL_PYTHON_MOD) lib/python/btts/profilemanager.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/utils.py
 
 	$(INSTALL_DIR) $(CONF_DIR)
