@@ -20,6 +20,7 @@
 import argparse
 from   contextlib import ContextDecorator
 import dbus
+import dbus.mainloop.glib
 import sys
 
 import btts
@@ -84,6 +85,20 @@ def cmd_powered(args):
         properties.Set("org.bluez.Adapter1", "Powered",
                        args.powered)
 
+@failure_on([btts.ProfileManager.Error])
+@bad_usage_on([btts.ProfileManager.NoSuchProfileError])
+def cmd_profiles(args):
+    profile_manager = btts.ProfileManager()
+
+    if args.action == 'list':
+        states = profile_manager.get_profiles_state()
+        for profile in args.profile:
+            state = states[profile]
+            print("%s\t%s" % (profile, ['disabled', 'enabled'][state]))
+    else:
+        for profile in args.profile:
+            profile_manager.enable_profile(profile, args.action == 'enable')
+
 # Main argument parser
 main_parser = argparse.ArgumentParser(
         prog='btts config',
@@ -128,10 +143,37 @@ powered_parser.add_argument(
         help='Device powered state (true|false)')
 powered_parser.set_defaults(func=cmd_powered)
 
+# Argument parser for 'profiles' subcommand
+profiles_parser = subparsers.add_parser(
+        'profiles',
+        help='Get/Set active BT profiles',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='''\
+Get/Set active BT profiles.
+
+Valid profile names: %s
+''' % (', '.join(btts.ProfileManager.valid_profile_names)))
+profiles_parser.add_argument(
+        'action', choices=['list', 'enable', 'disable'],
+        help='Command to execute on the selected profiles')
+# Workaround for http://bugs.python.org/issue9625
+def profile_name(string):
+    if string not in btts.ProfileManager.valid_profile_names:
+        raise TypeError
+    return string
+profiles_parser.add_argument(
+        'profile', nargs='*',
+        type=profile_name,
+        default=btts.ProfileManager.valid_profile_names,
+        help='Profile to operate on or all profiles if none is given')
+profiles_parser.set_defaults(func=cmd_profiles)
+
 args = main_parser.parse_args()
 if not args.subcommand:
     main_parser.print_usage()
     sys.exit(1)
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 try:
     args.func(args)
