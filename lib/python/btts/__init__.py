@@ -17,6 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = [
+           # from adapter
+           'Adapter',
+
            # from adaptermanager
            'AdapterManager',
 
@@ -24,6 +27,7 @@ __all__ = [
            'ProfileManager',
            ]
 
+from btts.adapter import Adapter
 from btts.adaptermanager import AdapterManager
 from btts.profilemanager import ProfileManager
 import btts.utils
