@@ -6,7 +6,7 @@ StopWhenUnneeded=True
 [Service]
 Type=dbus
 BusName=org.merproject.btts.BluezPairingTool
-ExecStart=/usr/bin/btts bluez-pairing-tool --mode=server
+ExecStart=/usr/bin/btts bluez-pairing-tool --server
 EnvironmentFile=/usr/libexec/btts/environment
 User=btts
 
