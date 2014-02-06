@@ -23,10 +23,10 @@ from gi.repository import GObject
 
 import sys
 import signal
+import argparse
 import dbus
 import dbus.service
 import dbus.mainloop.glib
-from optparse import OptionParser
 
 # From bluez's tests
 import bluezutils
@@ -52,13 +52,13 @@ def dev_connect(path):
 
 class PairingTool(dbus.service.Object):
 	class State:
-		Initial = "Initial"
-		Pairing = "Pairing"
-		Succeeded = "Succeeded"
-		Failed = "Failed"
-		Cancelling = "Cancelling"
-		Cancelled = "Cancelled"
-		CancelFailed = "CancelFailed"
+		Initial = "initial"
+		Pairing = "pairing"
+		Succeeded = "succeeded"
+		Failed = "failed"
+		Cancelling = "cancelling"
+		Cancelled = "cancelled"
+		CancelFailed = "cancel-failed"
 
 	def __init__(self, bus, path):
 		dbus.service.Object.__init__(self, bus, path)
@@ -71,7 +71,7 @@ class PairingTool(dbus.service.Object):
 		assert self.state == self.State.Initial
 
 		adapter = btts.AdapterManager().get_adapter_no_alias()
-		self.device = bluezutils.find_device(hw_address, adapter)
+		self.device = bluezutils.find_device(hw_address.upper(), adapter)
 		self.device_path = self.device.object_path
 
 		self.device.Pair(reply_handler=self.pair_reply,
@@ -124,10 +124,10 @@ class PairingTool(dbus.service.Object):
 	@dbus_service_method(TOOL_INTERFACE,
 			     in_signature="", out_signature="s")
 	def GetError(self):
-		assert (self.state == self.State.Failed or
-			self.state == self.State.CancelFailed)
-
-		return self.error
+		if self.error:
+			return self.error
+		else:
+			return "No error"
 
 	#------------------------------------------------------------
 	@dbus_service_method(TOOL_INTERFACE,
@@ -143,19 +143,139 @@ class PairingTool(dbus.service.Object):
 		self.device = None
 		self.device_path = None
 
+class CommandPair:
+	'''\
+	Initiate pairing.
+
+	See org.bluez.Device1.Pair() in the bluez5 D-Bus API documentation.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'pair',
+				help='Initiate pairing',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.add_argument('address', type=str,
+				    help='Address of the device to pair with')
+		parser.set_defaults(handler=self)
+
+	def __call__(self, tool, args):
+		tool.Pair(args.address)
+
+class CommandCancel:
+	'''\
+	Cancel pairing.
+
+	See org.bluez.Device1.CancelPairing() in the bluez5 D-Bus API documentation.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'cancel',
+				help='Cancel pairing',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, tool, args):
+		tool.Cancel()
+
+class CommandState:
+	'''\
+	Get state.
+
+	Possible states:
+
+		initial        tool is in its initial state
+		pairing        pairing operation in progress
+		succeeded      pairing successfully finished
+		failed         pairing failed
+		cancelling     cancel operation in progress
+		cancelled      cancel operation successfully finished
+		cancel-failed  cancel operation failed
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'state',
+				help='Get state',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, tool, args):
+		print(tool.GetState())
+
+class CommandErrorName:
+	'''\
+	Get the last received D-Bus error name.
+
+	Until in "Failed" or "CancelFailed" state, it returns the string "No error"
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'error-name',
+				help='Get the last received D-Bus error name',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, tool, args):
+		print(tool.GetError())
+
+
+class CommandReset:
+	'''\
+	Reset the tool to its initial state.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'reset',
+				help='Reset the tool to its initial state',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, tool, args):
+		tool.Reset()
+
+
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 	bus = dbus.SystemBus()
 
-	parser = OptionParser()
-	parser.add_option("-m", "--mode", action="store",
-					type="string",
-					dest="mode",
-					default="client")
-	(options, args) = parser.parse_args()
+	parser = argparse.ArgumentParser(
+			prog='btts bluez-pairing-tool',
+			formatter_class=argparse.RawDescriptionHelpFormatter,
+			description='''\
+Bluez pairing tool with non-interactive command line user interface.
 
-	if options.mode == "server":
+It consists of a background service and a client process providing user
+interface. Pass `--server' option to run the background service instead of user
+interface.
+
+''')
+	subparsers = parser.add_subparsers(
+			dest='subcommand', title='subcommands',
+			help='''Valid subcommands. Pass "<subcommand> --help" to get
+				more help on the given subcommand.''')
+
+	CommandPair(subparsers)
+	CommandCancel(subparsers)
+	CommandState(subparsers)
+	CommandErrorName(subparsers)
+	CommandReset(subparsers)
+
+	parser.usage = '%(prog)s --server\n' + parser.format_usage()
+
+	if '--server' in sys.argv:
+		if len(sys.argv) > 2:
+			parser.error('Unexpected argument')
+
 		mainloop = GObject.MainLoop()
 
 		name = dbus.service.BusName(TOOL_BUS_NAME, bus)
@@ -170,7 +290,7 @@ if __name__ == '__main__':
 
 		mainloop.run()
 	else:
+		args = parser.parse_args()
 		tool_object = bus.get_object(TOOL_BUS_NAME, TOOL_PATH)
 		tool = dbus.Interface(tool_object, TOOL_INTERFACE)
-		retv = getattr(tool, args[0])(*args[1:])
-		print(retv)
+		args.handler(tool, args)
