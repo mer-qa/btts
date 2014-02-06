@@ -53,8 +53,8 @@ class PairingTool(dbus.service.Object):
 	def Pair(self, hw_address):
 		assert self.state == self.State.Initial
 
-		self.device = bluezutils.find_device(hw_address,
-						options.adapter_pattern)
+		adapter = btts.AdapterManager().get_adapter_no_alias()
+		self.device = bluezutils.find_device(hw_address, adapter)
 		self.device_path = self.device.object_path
 
 		self.device.Pair(reply_handler=self.pair_reply,
@@ -136,10 +136,6 @@ if __name__ == '__main__':
 					type="string",
 					dest="mode",
 					default="client")
-	parser.add_option("-i", "--adapter", action="store",
-					type="string",
-					dest="adapter_pattern",
-					default=None)
 	(options, args) = parser.parse_args()
 
 	if options.mode == "server":
