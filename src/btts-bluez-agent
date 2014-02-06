@@ -312,10 +312,6 @@ if __name__ == '__main__':
 					type="string",
 					dest="mode",
 					default="client")
-	parser.add_option("-i", "--adapter", action="store",
-					type="string",
-					dest="adapter_pattern",
-					default=None)
 	(options, args) = parser.parse_args()
 
 	if options.mode == "server":
