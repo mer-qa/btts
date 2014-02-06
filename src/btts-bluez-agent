@@ -6,11 +6,12 @@ from gi.repository import GObject
 
 import sys
 import signal
+import argparse
 import dbus
 import dbus.service
 import dbus.mainloop.glib
-from optparse import OptionParser
 
+import btts
 from btts.utils import dbus_service_method, dbus_service_signal
 
 BUS_NAME = 'org.bluez'
@@ -135,7 +136,7 @@ class State(object):
 	def __init__(self, agent):
 		self.agent = agent
 		self.released = False
-		self.passkey_displayed = (0, 0)
+		self.displayed_passkey = (0, 0)
 		self._active_call = NoCall()
 
 	@property
@@ -200,7 +201,7 @@ class Agent(dbus.service.Object):
 	@dbus_service_method(AGENT_INTERFACE,
 			     in_signature="ouq", out_signature="")
 	def DisplayPasskey(self, device, passkey, entered):
-		self.state.passkey_displayed = (passkey, entered)
+		self.state.displayed_passkey = (passkey, entered)
 
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_INTERFACE,
@@ -237,20 +238,20 @@ class Agent(dbus.service.Object):
 			     async_callbacks=('reply_handler', 'error_handler'))
 	def Cancel(self, reply_handler, error_handler):
 		self.state.active_call = NoCall()
-		self.state.passkey_displayed = (0, 0)
+		self.state.displayed_passkey = (0, 0)
 		self.state.active_call = CancelCall(reply_handler, error_handler)
 
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="i")
 	def IsReleased(self):
-		return self.state.active_call.released
+		return self.state.released
 
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="(ii)")
-	def GetPasskeyDisplayed(self):
-		return self.state.active_call.passkey_displayed
+	def GetDisplayedPasskey(self):
+		return self.state.displayed_passkey
 
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_TEST_INTERFACE,
@@ -302,19 +303,203 @@ class Agent(dbus.service.Object):
 		self.manager.RegisterAgent(self.__dbus_object_path__, self.capability)
 		self.manager.RequestDefaultAgent(self.__dbus_object_path__)
 
+class CommandReleased:
+	'''\
+	Test whether the agent was released.
+
+	Prints "true" or "false".
+
+	See org.bluez.Agent1.Release() in bluez5 D-Bus API documentation.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'released',
+				help='Test whether the agent was released',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+		print(['false', 'true'][agent.IsReleased()])
+
+class CommandActiveCall:
+	'''\
+	Get active call.
+
+	Prints the name of the active D-Bus call on the org.bluez.Agent1 interface
+	(only method name, with the interface part stripped).
+
+	If not active call is waiting, the string "None" is printed.
+
+	To finish a waiting call, see `finish-active-call', `reject-active-call'
+	and `cancel-active-call'.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'active-call',
+				help='Get active call',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+		print(agent.GetActiveCall())
+
+class CommandFinishActiveCall:
+	'''\
+	Finish active call (also see `active-call').
+
+	Some calls expect result argument. See the API documentation of the
+	respective org.bluez.Agent1 methods in bluez5 D-Bus API.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'finish-active-call',
+				help='Finish active call',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.add_argument(
+				'result', nargs='?', type=str,
+				help='Value to return from the active call.')
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+		agent.FinishActiveCall(args.result)
+
+class CommandRejectActiveCall:
+	'''\
+	Reject active call (also see `active-call').
+
+	I.e. finish the call by issuing org.bluez.Error.Rejected D-Bus error.
+
+	See the API documentation of the respective org.bluez.Agent1 methods in
+	bluez5 D-Bus API for allowed errors.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'reject-active-call',
+				help='Reject active call',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+		agent.RejectActiveCall()
+
+class CommandCancelActiveCall:
+	'''\
+	Cancel active call (also see `active-call').
+
+	I.e. finish the call by issuing org.bluez.Error.Canceled D-Bus error.
+
+	See the API documentation of the respective org.bluez.Agent1 methods in
+	bluez5 D-Bus API for allowed errors.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'cancel-active-call',
+				help='Cancel active call',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+		agent.CancelActiveCall()
+
+class CommandDisplayedPasskey:
+	'''\
+	Get displayed passkey.
+
+	It prints the `passkey' and `entered' arguments separated with single
+	space.
+
+	See org.bluez.Agent1.DisplayPasskey() in bluez5 D-Bus API documentation.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'displayed-passkey',
+				help='Get displayed passkey',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+		print(agent.GetDisplayedPasskey())
+
+class CommandCapability:
+	'''\
+	Get/Set agent capability.
+
+	With no argument it prints agent's current capability.
+
+	To change agent capability the agent is unregistered and registered again,
+	reseting its internal state to initial.
+
+	See org.bluez.Agent1 in bluez5 D-Bus API documentation.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'capability',
+				help='Get/Set agent capability',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.add_argument(
+				'capability', nargs='?', type=str,
+				help='Agent capability')
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+		if not args.capability:
+			print(agent.GetCapability())
+		else:
+			agent.SetCapability(args.capability)
+
+
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 	bus = dbus.SystemBus()
 
-	parser = OptionParser()
-	parser.add_option("-m", "--mode", action="store",
-					type="string",
-					dest="mode",
-					default="client")
-	(options, args) = parser.parse_args()
+	parser = argparse.ArgumentParser(
+			prog='btts bluez-agent',
+			formatter_class=argparse.RawDescriptionHelpFormatter,
+			description='''\
+Bluez agent with non-interactive command line user interface.
 
-	if options.mode == "server":
+See org.bluez.Agent1 in bluez5 D-Bus API documentation.
+
+It consists of a background service and a client process providing user
+interface. Pass `--server' option to run the background service instead of user
+interface.
+
+''')
+	subparsers = parser.add_subparsers(
+			dest='subcommand', title='subcommands',
+			help='''Valid subcommands. Pass "<subcommand> --help" to get
+				more help on the given subcommand.''')
+
+
+	CommandReleased(subparsers)
+	CommandActiveCall(subparsers)
+	CommandFinishActiveCall(subparsers)
+	CommandRejectActiveCall(subparsers)
+	CommandCancelActiveCall(subparsers)
+	CommandDisplayedPasskey(subparsers)
+	CommandCapability(subparsers)
+
+	parser.usage = '%(prog)s --server\n' + parser.format_usage()
+
+	if '--server' in sys.argv:
+		if len(sys.argv) > 2:
+			parser.error('Unexpected argument')
+
 		mainloop = GObject.MainLoop()
 
 		name = dbus.service.BusName(AGENT_BUS_NAME, bus)
@@ -332,7 +517,7 @@ if __name__ == '__main__':
 		#adapter.UnregisterAgent(path)
 		#print("Agent unregistered")
 	else:
+		args = parser.parse_args()
 		agent_object = bus.get_object(AGENT_BUS_NAME, AGENT_PATH)
 		agent = dbus.Interface(agent_object, AGENT_TEST_INTERFACE)
-		retv = getattr(agent, args[0])(*args[1:])
-		print(retv)
+		args.handler(agent, args)
