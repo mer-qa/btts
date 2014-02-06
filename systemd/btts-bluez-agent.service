@@ -6,7 +6,7 @@ StopWhenUnneeded=True
 [Service]
 Type=dbus
 BusName=org.merproject.btts.BluezAgent
-ExecStart=/usr/bin/btts bluez-agent --mode=server
+ExecStart=/usr/bin/btts bluez-agent --server
 EnvironmentFile=/usr/libexec/btts/environment
 User=btts
 
