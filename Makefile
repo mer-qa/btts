@@ -29,10 +29,12 @@ install:
 	$(INSTALL_DIR) $(LIBEXEC_DIR)
 	$(INSTALL_LIBEXEC_PROG) src/environment
 	$(INSTALL_LIBEXEC_PROG) src/environment.sh
+	$(INSTALL_LIBEXEC_PROG) src/btts-a2dp
 	$(INSTALL_LIBEXEC_PROG) src/btts-adapter
 	$(INSTALL_LIBEXEC_PROG) src/btts-agent
 	$(INSTALL_LIBEXEC_PROG) src/btts-config
 	$(INSTALL_LIBEXEC_PROG) src/btts-device
+	$(INSTALL_LIBEXEC_PROG) src/btts-hfp
 	$(INSTALL_LIBEXEC_PROG) src/btts-pairing
 
 	$(INSTALL_DIR) $(PYTHON_PKG_DIR)
