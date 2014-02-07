@@ -32,12 +32,14 @@ install:
 	$(INSTALL_LIBEXEC_PROG) src/btts-bluez-agent
 	$(INSTALL_LIBEXEC_PROG) src/btts-bluez-pairing-tool
 	$(INSTALL_LIBEXEC_PROG) src/btts-config
+	$(INSTALL_LIBEXEC_PROG) src/btts-device
 
 	$(INSTALL_DIR) $(PYTHON_PKG_DIR)
 	$(INSTALL_PYTHON_MOD) lib/python/btts/__init__.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/adapter.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/adaptermanager.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/cliutils.py
+	$(INSTALL_PYTHON_MOD) lib/python/btts/device.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/profilemanager.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/utils.py
 

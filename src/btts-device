@@ -1,0 +1,114 @@
+#!/usr/bin/python3
+
+import argparse
+import dbus
+import dbus.mainloop.glib
+from   gi.repository import GObject
+import sys
+
+# From bluez's tests
+import bluezutils
+
+import btts
+from   btts.cliutils import failure_on, bad_usage_on, error_handler
+
+class CommandInquiry:
+    '''\
+    Inquiry a remote device.
+
+    Can be used e.g. to (1) test availability of a remote device or to (2)
+    rediscover a device previously removed with `remove' command in order to
+    unpair it.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'inquiry',
+                help='Inquiry a remote device',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument(
+                'address', type=str,
+                help='Device address')
+        parser.add_argument(
+                'timeout', nargs='?', type=int, default=30,
+                help='Timeout [seconds]')
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.AdapterManager.Error])
+    def __call__(self, args):
+        adapter = btts.Adapter()
+
+        # TODO: restore old value on cleanup
+        adapter.discovering = True
+
+        device = btts.Device(args.address)
+
+        if not device.available:
+            loop = GObject.MainLoop()
+            device.available_changed.connect(lambda x: loop.quit())
+            GObject.timeout_add(args.timeout * 1000, loop.quit)
+            loop.run()
+
+        print(['false', 'true'][device.available])
+
+class CommandRemove:
+    '''\
+    Remove a remote device and associated pairing information.
+
+    Main use is to unpair a device. The device can be then rediscovered with
+    the `inquiry' command.
+
+    See org.bluez.Adapter1.RemoveDevice() in bluez5 D-Bus API documentation.
+    '''
+
+    _REASONABLE_TIMEOUT = 5000 # [ms]
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'remove',
+                help='Remove a remote device and associated pairing information',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument(
+                'address', type=str,
+                help='Device address')
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.AdapterManager.Error])
+    def __call__(self, args):
+        device = btts.Device(args.address)
+
+        if not device.available:
+            warnings.warn('Device already removed. Nothing to do.')
+            return
+
+        loop = GObject.MainLoop()
+        device.available_changed.connect(lambda x: loop.quit())
+        GObject.timeout_add(_REASONABLE_TIMEOUT, loop.quit)
+        loop.run()
+
+        if device.available:
+            raise Failure('Device was not removed')
+
+# Main argument parser
+main_parser = argparse.ArgumentParser(
+        prog='btts device',
+        description='Remote device management utility')
+subparsers = main_parser.add_subparsers(
+        dest='subcommand', title='subcommands',
+        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
+            on the given subcommand.''')
+
+CommandInquiry(subparsers)
+CommandRemove(subparsers)
+
+args = main_parser.parse_args()
+if not args.subcommand:
+    main_parser.print_usage()
+    sys.exit(1)
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+with error_handler(main_parser):
+    args.handler(args)

@@ -43,3 +43,42 @@ def dbus_service_signal(dbus_interface, **kwargs):
 		return logger
 
 	return ctor
+
+def signal(func):
+    class Signal:
+        def __init__(self):
+            self.slots = set()
+
+        def __call__(self, *args):
+            for slot in self.slots:
+                slot(*args)
+
+        def connect(self, slot):
+            self.slots.add(slot)
+
+        def disconnect(self, slot):
+            self.slots.remove(slot)
+    return Signal()
+
+if __name__ == '__main__':
+    def test_signal():
+        class Sender:
+            def foo(self, num):
+                self.foo_called(num)
+
+            @signal
+            def foo_called(self, num):
+                pass
+
+        class Receiver:
+            def on_foo_called(self, num):
+                print('foo called with %d' % (num))
+
+        sender = Sender()
+        receiver = Receiver()
+
+        sender.foo_called.connect(receiver.on_foo_called)
+
+        sender.foo(3)
+
+    test_signal()
