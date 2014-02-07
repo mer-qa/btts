@@ -56,6 +56,37 @@ class CommandPowered:
             adapter.powered = args.powered
             # TODO: wait for change
 
+class CommandDiscoverable:
+    '''\
+    Get/Set adapter discoverable state.
+
+    With no argument it prints "true" or "false" to indicate current adapter
+    state.
+
+    This is equivalent to access the org.bluez.Adapter1.Discoverable D-Bus property.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'discoverable',
+                help='Get/Set adapter discoverable state',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('discoverable', nargs='?', type=btts.cliutils.boolean,
+                            help='Adapter discoverable state (true|false)')
+        parser.set_defaults(handler=self)
+
+
+    @failure_on([btts.AdapterManager.Error])
+    def __call__(self, args):
+        adapter = btts.Adapter()
+
+        if args.discoverable == None:
+            print(["false", "true"][adapter.discoverable])
+        else:
+            adapter.discoverable = args.discoverable
+            # TODO: wait for change
+
 # Main argument parser
 main_parser = argparse.ArgumentParser(
         prog='btts adapter',
@@ -66,6 +97,7 @@ subparsers = main_parser.add_subparsers(
             on the given subcommand.''')
 
 CommandPowered(subparsers)
+CommandDiscoverable(subparsers)
 
 args = main_parser.parse_args()
 if not args.subcommand:

@@ -78,3 +78,14 @@ class Adapter:
             # is on while it is not.
             if discovering != self.discovering:
                 self._adapter_iface.StopDiscovery()
+
+    @property
+    def discoverable(self):
+        self._ensure_ready()
+        return self._properties_iface.Get('org.bluez.Adapter1', 'Discoverable')
+
+    @discoverable.setter
+    def discoverable(self, discoverable):
+        self._ensure_ready()
+        return self._properties_iface.Set('org.bluez.Adapter1', 'Discoverable',
+                                          discoverable)
