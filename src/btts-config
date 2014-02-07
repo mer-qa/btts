@@ -56,37 +56,6 @@ class CommandAdapter:
         else:
             adapter_manager.set_adapter(args.adapter)
 
-class CommandPowered:
-    '''\
-    Get/Set adapter powered state.
-
-    With no argument it prints "true" or "false" to indicate current adapter
-    state.
-
-    This is equivalent to access the org.bluez.Adapter1.Powered D-Bus property.
-    '''
-
-    def __init__(self, subparsers):
-        parser = subparsers.add_parser(
-                'powered',
-                help='Get/Set adapter powered state',
-                formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
-        parser.add_argument('powered', nargs='?', type=btts.cliutils.boolean,
-                            help='Device powered state (true|false)')
-        parser.set_defaults(handler=self)
-
-
-    @failure_on([btts.AdapterManager.Error])
-    def __call__(self, args):
-        adapter = btts.Adapter()
-
-        if args.powered == None:
-            print(["false", "true"][adapter.powered])
-        else:
-            adapter.powered = args.powered
-            # TODO: wait for change
-
 class CommandProfiles:
     '''\
     Get/Set active BT profiles.
@@ -139,7 +108,6 @@ subparsers = main_parser.add_subparsers(
             on the given subcommand.''')
 
 CommandAdapter(subparsers)
-CommandPowered(subparsers)
 CommandProfiles(subparsers)
 
 args = main_parser.parse_args()

@@ -1,0 +1,78 @@
+#!/usr/bin/python3
+#
+# BTTS - BlueTooth Test Suite
+#
+# Copyright (C) 2014 Jolla Ltd.
+# Contact: Martin Kampas <martin.kampas@jollamobile.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import dbus
+import dbus.mainloop.glib
+import sys
+
+import btts
+from   btts.cliutils import failure_on, bad_usage_on, error_handler
+
+class CommandPowered:
+    '''\
+    Get/Set adapter powered state.
+
+    With no argument it prints "true" or "false" to indicate current adapter
+    state.
+
+    This is equivalent to access the org.bluez.Adapter1.Powered D-Bus property.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'powered',
+                help='Get/Set adapter powered state',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('powered', nargs='?', type=btts.cliutils.boolean,
+                            help='Adapter powered state (true|false)')
+        parser.set_defaults(handler=self)
+
+
+    @failure_on([btts.AdapterManager.Error])
+    def __call__(self, args):
+        adapter = btts.Adapter()
+
+        if args.powered == None:
+            print(["false", "true"][adapter.powered])
+        else:
+            adapter.powered = args.powered
+            # TODO: wait for change
+
+# Main argument parser
+main_parser = argparse.ArgumentParser(
+        prog='btts adapter',
+        description='Adapter controlling utility.')
+subparsers = main_parser.add_subparsers(
+        dest='subcommand', title='subcommands',
+        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
+            on the given subcommand.''')
+
+CommandPowered(subparsers)
+
+args = main_parser.parse_args()
+if not args.subcommand:
+    main_parser.print_usage()
+    sys.exit(1)
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+with error_handler(main_parser):
+    args.handler(args)
