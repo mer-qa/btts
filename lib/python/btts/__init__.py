@@ -23,6 +23,9 @@ __all__ = [
            # from adaptermanager
            'AdapterManager',
 
+           # from device
+           'Device',
+
            # from profilemanager
            'ProfileManager',
            ]
@@ -36,4 +39,5 @@ import btts.utils
 
 from btts.adapter import Adapter
 from btts.adaptermanager import AdapterManager
+from btts.device import Device
 from btts.profilemanager import ProfileManager
