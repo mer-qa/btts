@@ -27,12 +27,13 @@ import argparse
 import dbus
 import dbus.service
 import dbus.mainloop.glib
+import warnings
 
 # From bluez's tests
 import bluezutils
 
 import btts
-from btts.utils import dbus_service_method
+from btts.utils import dbus_service_method, dbus_service_signal
 
 TOOL_BUS_NAME = 'org.merproject.btts.BluezPairingTool'
 TOOL_PATH = '/org/merproject/btts/BluezPairingTool'
@@ -59,10 +60,27 @@ class PairingTool(dbus.service.Object):
 		Cancelling = "cancelling"
 		Cancelled = "cancelled"
 		CancelFailed = "cancel-failed"
+	_all_states = [State.Initial, State.Pairing, State.Succeeded,
+		       State.Failed, State.Cancelling, State.Cancelled,
+		       State.CancelFailed]
+	_error_states = [State.Failed, State.CancelFailed]
 
 	def __init__(self, bus, path):
 		dbus.service.Object.__init__(self, bus, path)
-		self.state = self.State.Initial
+		self._state = self.State.Initial
+		self.error = None
+
+	@property
+	def state(self):
+		return self._state
+
+	@state.setter
+	def state(self, state):
+		# Error must be set before error state is set so the signal can
+		# be emited
+		assert state not in self._error_states or self.error != None
+		self._state = state
+		self.StateChanged(self._state, self.error or '')
 
 	#------------------------------------------------------------
 	@dbus_service_method(TOOL_INTERFACE,
@@ -86,9 +104,9 @@ class PairingTool(dbus.service.Object):
 	def pair_error(self, error):
 		assert self.state == self.State.Pairing
 
+		self.error = error.get_dbus_name()
 		self.state = self.State.Failed
 
-		self.error = error.get_dbus_name()
 		if self.error == "org.freedesktop.DBus.Error.NoReply" and self.device:
 			print("Timed out. Cancelling pairing")
 			self.device.CancelPairing()
@@ -111,14 +129,19 @@ class PairingTool(dbus.service.Object):
 	def cancel_error(self, error):
 		assert self.state == self.State.Cancelling
 
-		self.state = self.State.CancelFailed
 		self.error = error.get_dbus_name()
+		self.state = self.State.CancelFailed
 
 	#------------------------------------------------------------
 	@dbus_service_method(TOOL_INTERFACE,
 			     in_signature="", out_signature="s")
 	def GetState(self):
 		return self.state
+
+	@dbus_service_signal(TOOL_INTERFACE,
+			     signature="ss")
+	def StateChanged(self, state, error):
+		pass
 
 	#------------------------------------------------------------
 	@dbus_service_method(TOOL_INTERFACE,
@@ -207,6 +230,52 @@ class CommandState:
 	def __call__(self, tool, args):
 		print(tool.GetState())
 
+class CommandExpectState:
+	'''\
+	Verify state change - waiting.
+
+	Also see `state'
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'expect-state',
+				help='Verify state change - waiting',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.add_argument('state', type=self.state,
+				    help='Expected state')
+		parser.add_argument('timeout', nargs='?', type=int, default=5,
+				    help='Timeout [secs]')
+		parser.set_defaults(handler=self)
+
+	def __call__(self, tool, args):
+		current_state = tool.GetState()
+		if current_state == args.state:
+			print('true')
+                        return
+
+		current_state = [] # hack for missing 'nonlocal' keyword in python 2
+		loop = GObject.MainLoop()
+		def on_state_changed(state, error):
+			current_state.append(state)
+			loop.quit()
+		tool.connect_to_signal("StateChanged",
+				       on_state_changed)
+		GObject.timeout_add(args.timeout * 1000, loop.quit)
+		loop.run()
+
+		if current_state == []:
+			warnings.warn("Timeout waiting for state change")
+		print(['false', 'true'][current_state == [args.state]])
+
+	@staticmethod
+	def state(string):
+		if not string in PairingTool._all_states:
+			raise TypeError
+		return string
+
+
 class CommandErrorName:
 	'''\
 	Get the last received D-Bus error name.
@@ -267,6 +336,7 @@ interface.
 	CommandPair(subparsers)
 	CommandCancel(subparsers)
 	CommandState(subparsers)
+	CommandExpectState(subparsers)
 	CommandErrorName(subparsers)
 	CommandReset(subparsers)
 
