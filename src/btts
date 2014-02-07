@@ -6,7 +6,7 @@ export BTTS_PYTHON_LIB_DIR="/usr/lib/btts/python"
 usage()
 {
 	cat <<END
-usage: btts <command> [command-args]
+usage: btts [--expect OUTPUT] <command> [command-args]
 
 Bluetooth Test Suite command line utility.
 
@@ -14,8 +14,15 @@ Valid commands:
 
 $(for command in $(btts_commands); do echo -e "\t${command}"; done)
 
+Run 'btts <command> --help' to get help for the specific ommand,
+
+With the '--expect' option the output of the command can be verified to match
+the expected value. When passed, the exit code will be 0 only when both the
+command's exit code is 0 and its output matches.
+
 Additionally it is possible to specify an absolute path to any executable in
-place of <command> in order to execute it with BTTS environment set.
+place of <command> in order to execute it with BTTS environment set.  (The
+'--expect' option is ignored in this case.)
 END
 }
 
@@ -44,12 +51,25 @@ export PYTHONPATH="${BLUEZ_TEST_DIR}:${PYTHONPATH}"
 
 export PYTHONPATH="${BTTS_PYTHON_LIB_DIR}:${PYTHONPATH}"
 
+if [[ "$1" == "--expect" ]]
+then
+  expected="$2"
+  shift 2
+fi
+
 btts_command="$1"
 shift || true
 
 if btts_commands |grep --line-regexp -F -e "${btts_command}" -q
 then
-  exec ${BTTS_COMMAND_DIR}/btts-${btts_command} "${@}"
+  if [[ -z "${expected}" ]]
+  then
+    exec ${BTTS_COMMAND_DIR}/btts-${btts_command} "${@}"
+  else
+    actual="$(${BTTS_COMMAND_DIR}/btts-${btts_command} "${@}")" && \
+      [[ "${actual}" == "${expected}" ]]
+    exit
+  fi
 fi
 
 # Allow exec arbitrary command with BTTS environment
