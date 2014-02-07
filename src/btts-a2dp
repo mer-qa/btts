@@ -25,47 +25,44 @@ import sys
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
 
-class CommandAdapter:
+class CommandEnabled:
     '''\
-    Get/Set adapter to work with.
+    Get/Set profile enabled state.
 
-    Device aliases can be defined in /etc/btts/adapters.  Content of this file
-    is newline separated list of records.  Each record consists of a space
-    separated pair of <bd_address> and <alias>. Lines starting with "#" are
-    ignored.
+    With no argument it prints "true" or "false" to indicate current state.
     '''
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
-                'adapter',
-                help='Get/Set adapter to work with',
+                'enabled',
+                help='Get/Set profile enabled state',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
         parser.add_argument(
-                'adapter', nargs='?', type=str,
-                help='Device name (e.g. "hci0") or alias (see above)')
+                'enabled', nargs='?', type=btts.cliutils.boolean,
+                help='Profile enabled state (true|false)')
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.AdapterManager.Error])
-    @bad_usage_on([btts.AdapterManager.NoSuchAdapterError])
+    @failure_on([btts.ProfileManager.Error])
     def __call__(self, args):
-        adapter_manager = btts.AdapterManager()
+        profile_manager = btts.ProfileManager()
 
-        if args.adapter == None:
-            print(adapter_manager.get_adapter())
+        if args.enabled == None:
+            state = profile_manager.get_profiles_state()['a2dp']
+            print(['false', 'true'][state])
         else:
-            adapter_manager.set_adapter(args.adapter)
+            profile_manager.enable_profile('a2dp', args.enabled)
 
 # Main argument parser
 main_parser = argparse.ArgumentParser(
-        prog='btts config',
-        description='Bluetooth Test Suite configuration and management utility.')
+        prog='btts a2dp',
+        description='Advanced Audio Distribution Profile controlling utility.')
 subparsers = main_parser.add_subparsers(
         dest='subcommand', title='subcommands',
         help='''Valid subcommands. Pass "<subcommand> --help" to get more help
             on the given subcommand.''')
 
-CommandAdapter(subparsers)
+CommandEnabled(subparsers)
 
 args = main_parser.parse_args()
 if not args.subcommand:
