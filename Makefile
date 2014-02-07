@@ -31,9 +31,9 @@ install:
 	$(INSTALL_LIBEXEC_PROG) src/environment.sh
 	$(INSTALL_LIBEXEC_PROG) src/btts-adapter
 	$(INSTALL_LIBEXEC_PROG) src/btts-agent
-	$(INSTALL_LIBEXEC_PROG) src/btts-bluez-pairing-tool
 	$(INSTALL_LIBEXEC_PROG) src/btts-config
 	$(INSTALL_LIBEXEC_PROG) src/btts-device
+	$(INSTALL_LIBEXEC_PROG) src/btts-pairing
 
 	$(INSTALL_DIR) $(PYTHON_PKG_DIR)
 	$(INSTALL_PYTHON_MOD) lib/python/btts/__init__.py
