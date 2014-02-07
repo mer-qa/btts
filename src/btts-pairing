@@ -318,7 +318,7 @@ if __name__ == '__main__':
 	bus = dbus.SystemBus()
 
 	parser = argparse.ArgumentParser(
-			prog='btts bluez-pairing-tool',
+			prog='btts pairing',
 			formatter_class=argparse.RawDescriptionHelpFormatter,
 			description='''\
 Bluez pairing tool with non-interactive command line user interface.
