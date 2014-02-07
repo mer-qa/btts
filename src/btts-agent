@@ -468,7 +468,7 @@ if __name__ == '__main__':
 	bus = dbus.SystemBus()
 
 	parser = argparse.ArgumentParser(
-			prog='btts bluez-agent',
+			prog='btts agent',
 			formatter_class=argparse.RawDescriptionHelpFormatter,
 			description='''\
 Bluez agent with non-interactive command line user interface.
