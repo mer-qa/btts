@@ -1,44 +1,12 @@
 #!/usr/bin/python3
 
 import argparse
-from   contextlib import ContextDecorator
 import dbus
 import dbus.mainloop.glib
 import sys
 
 import btts
-
-class Failure(Exception):
-    pass
-
-class BadUsage(Exception):
-    pass
-
-class failure_on(ContextDecorator):
-    def __init__(self, exc_types):
-        ContextDecorator.__init__(self)
-        self.exc_types = exc_types
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type and any(map(lambda t: issubclass(exc_type, t), self.exc_types)):
-            raise Failure(str(exc_value)).with_traceback(traceback)
-        return False
-
-class bad_usage_on(ContextDecorator):
-    def __init__(self, exc_types):
-        ContextDecorator.__init__(self)
-        self.exc_types = exc_types
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type and any(map(lambda t: issubclass(exc_type, t), self.exc_types)):
-            raise BadUsage(str(exc_value)).with_traceback(traceback)
-        return False
+from   btts.cliutils import failure_on, bad_usage_on, error_handler
 
 class CommandAdapter:
     '''\
@@ -87,7 +55,7 @@ class CommandPowered:
                 help='Get/Set adapter powered state',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
-        parser.add_argument('powered', nargs='?', type=btts.utils.boolean,
+        parser.add_argument('powered', nargs='?', type=btts.cliutils.boolean,
                             help='Device powered state (true|false)')
         parser.set_defaults(handler=self)
 
@@ -164,12 +132,5 @@ if not args.subcommand:
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
-try:
+with error_handler(main_parser):
     args.handler(args)
-except BadUsage as e:
-    print(e, file=sys.stderr)
-    main_parser.print_usage()
-    sys.exit(1)
-except Failure as e:
-    print("Failed: %s" % (e), file=sys.stderr)
-    sys.exit(1)
