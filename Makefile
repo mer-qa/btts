@@ -37,6 +37,7 @@ install:
 	$(INSTALL_PYTHON_MOD) lib/python/btts/__init__.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/adapter.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/adaptermanager.py
+	$(INSTALL_PYTHON_MOD) lib/python/btts/cliutils.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/profilemanager.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/utils.py
 
