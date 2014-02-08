@@ -27,6 +27,7 @@ import argparse
 import dbus
 import dbus.service
 import dbus.mainloop.glib
+import warnings
 
 import btts
 from btts.utils import dbus_service_method, dbus_service_signal
@@ -153,8 +154,17 @@ class State(object):
 	def __init__(self, agent):
 		self.agent = agent
 		self.released = False
-		self.displayed_passkey = (0, 0)
+		self._displayed_passkey = (0, 0)
 		self._active_call = NoCall()
+
+        @property
+        def displayed_passkey(self):
+                return self._displayed_passkey
+
+        @displayed_passkey.setter
+        def displayed_passkey(self, displayed_passkey):
+                self._displayed_passkey = displayed_passkey
+                self.agent.DisplayedPasskeyChanged(*self._displayed_passkey)
 
 	@property
 	def active_call(self):
@@ -270,6 +280,11 @@ class Agent(dbus.service.Object):
 	def GetDisplayedPasskey(self):
 		return self.state.displayed_passkey
 
+	@dbus_service_signal(AGENT_TEST_INTERFACE,
+			     signature="ii")
+	def DisplayedPasskeyChanged(self, passkey, entered):
+		pass
+
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_TEST_INTERFACE,
 			     in_signature="", out_signature="s")
@@ -347,7 +362,7 @@ class CommandActiveCall:
 	Prints the name of the active D-Bus call on the org.bluez.Agent1 interface
 	(only method name, with the interface part stripped).
 
-	If not active call is waiting, the string "None" is printed.
+	If no active call is waiting, the string "None" is printed.
 
 	To finish a waiting call, see `finish-active-call', `reject-active-call'
 	and `cancel-active-call'.
@@ -363,6 +378,52 @@ class CommandActiveCall:
 
 	def __call__(self, agent, args):
 		print(agent.GetActiveCall())
+
+class CommandExpectActiveCall:
+	'''\
+	Verify active call change - waiting.
+
+        Verifies the name of the active D-Bus call on the org.bluez.Agent1
+        interface (only method name, with the interface part stripped) matches.
+        In case there is no active call, it waits given amount of time for
+        change.
+
+        Also see `active-call'
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'expect-active-call',
+				help='Verify active call change - waiting',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.add_argument('call', type=str,
+				    help='Expected call')
+		parser.add_argument('timeout', nargs='?', type=int, default=5,
+				    help='Timeout [secs]')
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+		active_call = agent.GetActiveCall()
+                if active_call == args.call:
+                        print('true')
+                        return
+
+                active_call = [] # hack for missing 'nonlocal' keyword in python 2
+                loop = GObject.MainLoop()
+                def on_active_call_changed(active_call_):
+                        active_call.append(active_call_)
+                        loop.quit()
+                agent.connect_to_signal('ActiveCallChanged',
+                                        on_active_call_changed)
+                GObject.timeout_add(args.timeout * 1000, loop.quit)
+                loop.run()
+
+                if active_call == []:
+                        warnings.warn("Timeout waiting for active-call change")
+                if active_call != [args.call]:
+                        warnings.warn('Active call: %s' % (active_call))
+                print(['false', 'true'][active_call == [args.call]])
 
 class CommandFinishActiveCall:
 	'''\
@@ -449,6 +510,52 @@ class CommandDisplayedPasskey:
 	def __call__(self, agent, args):
 		print(agent.GetDisplayedPasskey())
 
+class CommandExpectDisplayedPasskey:
+	'''\
+	Verify displayed passkey - waiting.
+
+	It verifies the `passkey' and `enterred' arguments, waiting for a
+        maximum of the given amount of time.
+
+	See org.bluez.Agent1.DisplayPasskey() in bluez5 D-Bus API documentation.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'verify-displayed-passkey',
+				help='Verify displayed passkey - waiting',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.add_argument('passkey', type=int,
+				    help='Expected passkey argument value')
+		parser.add_argument('entered', type=int,
+				    help='Expected entered argument value')
+		parser.add_argument('timeout', nargs='?', type=int, default=5,
+				    help='Timeout [secs]')
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+                expected_passkey = (args.passkey, args.entered)
+		displayed_passkey = agent.GetDisplayedPasskey()
+                if displayed_passkey == expected_passkey:
+                        print('true')
+                        return
+
+                displayed_passkey = [] # hack for missing 'nonlocal' keyword in python 2
+                loop = GObject.MainLoop()
+                def on_displayed_passkey_changed(displayed_passkey_):
+                        displayed_passkey.append(displayed_passkey_)
+                        loop.quit()
+                agent.connect_to_signal('DisplayedPasskeyChanged',
+                                        on_displayed_passkey_changed)
+                GObject.timeout_add(args.timeout * 1000, loop.quit)
+                loop.run()
+
+                if displayed_passkey == []:
+                        warnings.warn("Timeout waiting for displayed-passkey change")
+                print(['false', 'true'][displayed_passkey == [expected_passkey]])
+
+
 class CommandCapability:
 	'''\
 	Get/Set agent capability.
@@ -505,10 +612,12 @@ interface.
 
 	CommandReleased(subparsers)
 	CommandActiveCall(subparsers)
+	CommandExpectActiveCall(subparsers)
 	CommandFinishActiveCall(subparsers)
 	CommandRejectActiveCall(subparsers)
 	CommandCancelActiveCall(subparsers)
 	CommandDisplayedPasskey(subparsers)
+	CommandExpectDisplayedPasskey(subparsers)
 	CommandCapability(subparsers)
 
 	parser.usage = '%(prog)s --server\n' + parser.format_usage()
