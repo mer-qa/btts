@@ -56,6 +56,44 @@ class CommandAdapter:
         else:
             adapter_manager.set_adapter(args.adapter)
 
+class CommandHostAlias:
+    '''\
+    Get/Set name to be always used by the selected adapter.
+
+    This is the same as to access the org.bluez.Adapter1.Alias bluez5 D-Bus API
+    property of the adapter selected with the `adapter' command.
+
+    Alias of the previously selected adapter will be automatically reset prior
+    to setting alias to the newly selected adapter so there is (should be)
+    always just one device with the given alias available on the network. Also
+    the previously selected adapter is automaticaly powered off. The newly
+    selected adapter's powered state is not touched.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'host-alias',
+                help='Get/Set name to be always used by the selected adapter',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument(
+                'alias', nargs='?', type=str,
+                help='Host alias. Pass empty string to reset adapter alias.')
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.AdapterManager.Error])
+    def __call__(self, args):
+        adapter_manager = btts.AdapterManager()
+
+        if args.alias == None:
+            host_alias = adapter_manager.get_host_alias()
+            if host_alias:
+                print(host_alias)
+            else:
+                print('<unset>')
+        else:
+            adapter_manager.set_host_alias(args.alias)
+
 # Main argument parser
 main_parser = argparse.ArgumentParser(
         prog='btts config',
@@ -66,6 +104,7 @@ subparsers = main_parser.add_subparsers(
             on the given subcommand.''')
 
 CommandAdapter(subparsers)
+CommandHostAlias(subparsers)
 
 args = main_parser.parse_args()
 if not args.subcommand:

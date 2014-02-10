@@ -89,3 +89,13 @@ class Adapter:
         self._ensure_ready()
         return self._properties_iface.Set('org.bluez.Adapter1', 'Discoverable',
                                           discoverable)
+
+    @property
+    def adapter_iface(self):
+        self._ensure_ready()
+        return self._adapter_iface
+
+    @property
+    def properties_iface(self):
+        self._ensure_ready()
+        return self._properties_iface
