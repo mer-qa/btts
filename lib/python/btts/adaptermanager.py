@@ -6,6 +6,8 @@ import os
 import re
 import warnings
 
+from btts.adapter import Adapter
+
 _ADAPTERS_FILE = "/etc/btts/adapters"
 _GSETTINGS_SCHEMA = "org.merproject.btts"
 
@@ -62,7 +64,36 @@ class AdapterManager:
         else:
             raise self.NoSuchAdapterError(adapter=name_or_alias)
 
+        adapter = Adapter()
+
+        try:
+            adapter.properties_iface.Set('org.bluez.Adapter1', 'Alias', '')
+            adapter.powered = False
+        except self.AdapterNotSetError:
+            pass
+
         self.settings.set_string("adapter", name)
+
+        # TODO: remove when Adapter handles adapter change
+        adapter = Adapter()
+
+        try:
+            adapter.properties_iface.Set('org.bluez.Adapter1', 'Alias',
+                                         self.get_host_alias())
+        except self.AdapterNotSetError:
+            pass
+
+    def get_host_alias(self):
+        host_alias = self.settings.get_string("host-alias")
+        return host_alias
+
+    def set_host_alias(self, host_alias):
+        self.settings.set_string("host-alias", host_alias)
+        try:
+            adapter = Adapter()
+            adapter.properties_iface.Set('org.bluez.Adapter1', 'Alias', host_alias)
+        except self.AdapterNotSetError:
+            pass
 
     @staticmethod
     def _read_aliases():

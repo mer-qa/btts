@@ -9,5 +9,14 @@
       </description>
     </key>
 
+    <key name="host-alias" type="s">
+      <default>""</default>
+      <summary>Name to be always used by the selected adapter</summary>
+      <description>
+        This value will be used for the org.bluez.Adapter1.Alias bluez5 D-Bus
+        API property of the adapter selected with the key "adapter".
+      </description>
+    </key>
+
   </schema>
 </schemalist>
