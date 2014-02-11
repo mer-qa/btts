@@ -1,0 +1,16 @@
+[Unit]
+Description=Bluetooth Test Suite - RPC Daemon
+Wants=btts-rpcdgenkeys.service
+After=btts-rpcdgenkeys.service
+After=network.target
+StopWhenUnneeded=True
+
+[Service]
+ExecStart=/usr/sbin/sshd -D -f /etc/btts/rpc/sshd_config
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=always
+User=btts
+
+[Install]
+RequiredBy=btts.target

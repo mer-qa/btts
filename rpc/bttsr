@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+# BTTS - BlueTooth Test Suite
+#
+# Copyright (C) 2014 Jolla Ltd.
+# Contact: Martin Kampas <martin.kampas@jollamobile.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SYSTEM_CONFIG_FILE=/etc/bttsr/bttsr.conf
+SYSTEM_IDENTITY_FILE=/etc/bttsr/id_rsa
+USER_CONFIG_FILE=${HOME}/.bttsr/bttsr.conf
+USER_IDENTITY_FILE=${HOME}/.bttsr/id_rsa
+
+usage()
+{
+  cat <<END
+usage: bttsr [btts-options] <command> [command-options...]
+
+Execute 'btts' utility remotely with the given command and arguments.
+
+Pass '--help' to get 'btts' help.
+
+FILES
+  ${SYSTEM_CONFIG_FILE}
+  ${USER_CONFIG_FILE/${HOME}/~}
+    This files are sourced as a shell script, in order.
+
+    Recognized variables:
+      BTTS_HOST
+        Required. The remote host to connect to.
+
+      BTTS_PORT
+        Required. The port on the remote host to connect to.
+
+  ${USER_IDENTITY_FILE/${HOME}/~}
+  ${SYSTEM_IDENTITY_FILE}
+    SSH identity files for publickey authentication, in search order. First
+    found used.
+END
+}
+
+if [[ ${#*} -eq 0 ]]
+then
+  usage >&2
+  exit 1
+fi
+
+[[ -r ${SYSTEM_CONFIG_FILE} ]] && . ${SYSTEM_CONFIG_FILE}
+[[ -r ${USER_CONFIG_FILE} ]] && . ${USER_CONFIG_FILE}
+
+if [[ -z "${BTTS_HOST}" ]]
+then
+  echo "Configuration error: BTTS_HOST not defined or empty." >&2
+  usage >&2
+  exit 1
+fi
+
+if [[ -z "${BTTS_PORT}" ]]
+then
+  echo "Configuration error: BTTS_PORT not defined or empty." >&2
+  usage >&2
+  exit 1
+fi
+
+[[ -r ${SYSTEM_IDENTITY_FILE} ]] && IDENTITY_FILE=${SYSTEM_IDENTITY_FILE}
+[[ -r ${USER_IDENTITY_FILE} ]] && IDENTITY_FILE=${USER_IDENTITY_FILE}
+
+if [[ -z "${IDENTITY_FILE}" ]]
+then
+  echo "No identity file found." >&2
+  usage >&2
+  exit 1
+fi
+
+if [[ ${IDENTITY_FILE} == ${SYSTEM_IDENTITY_FILE} ]]
+then
+  IDENTITY_DIR=${HOME}/.bttsr
+  IDENTITY_FILE=${IDENTITY_DIR}/system_id_rsa_copy
+  if [[ ${IDENTITY_FILE} -ot ${SYSTEM_IDENTITY_FILE} ]]
+  then
+    install -m 0700 -d ${IDENTITY_DIR}
+    install -m 0600 ${SYSTEM_IDENTITY_FILE} ${IDENTITY_FILE}
+  fi
+fi
+
+OPENSSH_VERSION=$(ssh -V 2>&1 |awk 'match($0, /^OpenSSH_([0-9]+)\.([0-9]+)/, m)\
+    { printf "%d%03d\n", m[1], m[2] }')
+if [[ ${OPENSSH_VERSION:-0} -ge 5006 ]]
+then
+  CONTROL_MASTER_OPTIONS="
+      -o ControlMaster=auto
+      -o ControlPath=/tmp/btts-rpc-%u-%h-%p
+      -o ControlPersist=180"
+fi
+
+exec ssh \
+  -l btts \
+  -o PreferredAuthentications=publickey \
+  -o StrictHostKeyChecking=no \
+  ${CONTROL_MASTER_OPTIONS} \
+  -i ${IDENTITY_FILE} \
+  -p ${BTTS_PORT} \
+  ${BTTS_HOST} \
+  -- "$(IFS=$'\x1F'; echo "btts${IFS}${*}${IFS}")"

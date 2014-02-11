@@ -23,7 +23,27 @@ Requires(pre): shadow-utils
 %global __python %{__python2}
 
 %description
-Description: %{summary}
+%{summary}.
+
+
+%package rpc-server
+Summary:  Bluetooth Test Suite - RPC Server
+Group:    System/Networking
+Requires: %{name} = %{version}-%{release}
+Requires: openssh-server
+
+%description rpc-server
+Bluetooth Test Suite - RPC Server.
+
+
+%package rpc-client
+Summary:  Bluetooth Test Suite - RPC Client
+Group:    System/Networking
+Requires: openssh-clients
+
+%description rpc-client
+Bluetooth Test Suite - RPC Client.
+
 
 %prep
 %setup -q
@@ -40,14 +60,38 @@ make install DESTDIR=%{buildroot}
 %files
 %doc README
 %{_bindir}/btts
-%{_exec_prefix}/lib/tmpfiles.d/*
+%{_exec_prefix}/lib/tmpfiles.d/btts.conf
 %{_exec_prefix}/lib/btts/*
-%{_libexecdir}/%{name}/*
+%{_libexecdir}/%{name}/btts-*
+%{_libexecdir}/%{name}/environment
+%{_libexecdir}/%{name}/environment.sh
 %{_datadir}/%{name}/*
 %{_datadir}/glib-2.0/schemas/*
-%{_unitdir}/*
-%config %{_sysconfdir}/dbus-1/system.d/*.conf
+%{_unitdir}/btts-bluez-agent.service
+%{_unitdir}/btts-bluez-pairing-tool.service
+%{_unitdir}/btts-dbus.service
+%{_unitdir}/btts-pulseaudio.service
+%{_unitdir}/btts.target
+%config %{_sysconfdir}/dbus-1/system.d/btts.conf
+
+%defattr(0664, btts, btts, 0755)
+%dir %{_sysconfdir}/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/adapters
+
+%files rpc-server
+%{_libexecdir}/%{name}/rpc-shell
+%{_exec_prefix}/lib/tmpfiles.d/btts-rpcd.conf
+%{_unitdir}/btts-rpcd.service
+%{_unitdir}/btts-rpcdgenkeys.service
+%defattr(0664, btts, btts, 0755)
+%dir %{_sysconfdir}/%{name}/rpc
+%config(noreplace) %attr(0600, btts, btts) %{_sysconfdir}/%{name}/rpc/authorized_keys
+%config(noreplace) %{_sysconfdir}/%{name}/rpc/sshd_config
+
+%files rpc-client
+%{_bindir}/bttsr
+%config(noreplace) %{_sysconfdir}/bttsr/bttsr.conf
+%config(noreplace) %{_sysconfdir}/bttsr/id_rsa
 
 
 %pre
@@ -61,6 +105,11 @@ exit 0
 %post
 systemd-tmpfiles --create btts.conf
 systemctl enable $(systemctl list-unit-files |awk '$1 ~ "^btts" {print $1}')
+
+
+%post rpc-server
+systemd-tmpfiles --create btts-rpcd.conf
+systemctl enable btts-rpcd.service
 
 
 %postun

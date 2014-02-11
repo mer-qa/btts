@@ -1,0 +1,11 @@
+[Unit]
+Description=Bluetooth Test Suite - RPC Daemon Key Generation
+ConditionPathExists=|!/etc/btts/rpc/ssh_host_rsa_key
+ConditionPathExists=|!/etc/btts/rpc/ssh_host_rsa_key.pub
+StopWhenUnneeded=True
+
+[Service]
+ExecStart=/usr/bin/ssh-keygen -t rsa -f /etc/btts/rpc/ssh_host_rsa_key -N ''
+Type=oneshot
+RemainAfterExit=yes
+User=btts
