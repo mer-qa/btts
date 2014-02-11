@@ -2,6 +2,8 @@ BIN_DIR          = $(DESTDIR)/usr/bin
 LIBEXEC_DIR      = $(DESTDIR)/usr/libexec/btts
 DATA_DIR         = $(DESTDIR)/usr/share/btts
 CONF_DIR         = $(DESTDIR)/etc/btts
+RPCD_CONF_DIR    = $(CONF_DIR)/rpc
+CLIENT_CONF_DIR  = $(DESTDIR)/etc/bttsr
 SYSTEMD_UNIT_DIR = $(DESTDIR)/usr/lib/systemd/system
 TMPFILES_D_DIR   = $(DESTDIR)/usr/lib/tmpfiles.d
 DBUS_CONFIG_DIR  = $(DESTDIR)/etc/dbus-1/system.d
@@ -13,6 +15,8 @@ INSTALL_DIR	     = install --directory -m 0775
 INSTALL_BIN_PROG     = install --target-directory="$(BIN_DIR)" -m 0775
 INSTALL_LIBEXEC_PROG = install --target-directory="$(LIBEXEC_DIR)" -m 0775
 INSTALL_CONF_FILE    = install --target-directory="$(CONF_DIR)" -m 0664
+INSTALL_RPCD_CONF_FILE = install --target-directory="$(RPCD_CONF_DIR)" -m 0664
+INSTALL_CLIENT_CONF_FILE = install --target-directory="$(CLIENT_CONF_DIR)" -m 0664
 INSTALL_SYSTEMD_UNIT = install --target-directory="$(SYSTEMD_UNIT_DIR)" -m 0664
 INSTALL_TMPFILES_D_CONFIG = install --target-directory="$(TMPFILES_D_DIR)" -m 0664
 INSTALL_DBUS_CONFIG  = install --target-directory="$(DBUS_CONFIG_DIR)" -m 0664
@@ -67,3 +71,29 @@ install:
 
 	$(INSTALL_DIR) $(GSCHEMA_DIR)
 	$(INSTALL_GSCHEMA) conf/btts.gschema.xml
+
+install: install-rpc-server
+install-rpc-server:
+	$(INSTALL_DIR) $(LIBEXEC_DIR)
+	$(INSTALL_LIBEXEC_PROG) rpc/rpc-shell
+
+	$(INSTALL_DIR) $(RPCD_CONF_DIR)
+	$(INSTALL_RPCD_CONF_FILE) rpc/authorized_keys
+	$(INSTALL_RPCD_CONF_FILE) rpc/sshd_config
+
+	$(INSTALL_DIR) $(SYSTEMD_UNIT_DIR)
+	$(INSTALL_SYSTEMD_UNIT) systemd/btts-rpcd.service
+	$(INSTALL_SYSTEMD_UNIT) systemd/btts-rpcdgenkeys.service
+
+	$(INSTALL_DIR) $(TMPFILES_D_DIR)
+	$(INSTALL_TMPFILES_D_CONFIG) systemd/tmpfiles.d/btts-rpcd.conf
+
+install: install-rpc-client
+install-rpc-client:
+	$(INSTALL_DIR) $(BIN_DIR)
+	$(INSTALL_BIN_PROG) rpc/bttsr
+
+	$(INSTALL_DIR) $(CLIENT_CONF_DIR)
+	$(INSTALL_CLIENT_CONF_FILE) rpc/bttsr.conf
+	sed -i 's/^BTTS_HOST=$$/&$(DEFAULT_BTTS_HOST)/' $(CLIENT_CONF_DIR)/bttsr.conf
+	$(INSTALL_CLIENT_CONF_FILE) rpc/id_rsa

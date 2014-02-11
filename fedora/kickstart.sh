@@ -45,6 +45,14 @@ Prerequisites
    See http://wiki.libvirt.org/page/Networking#Forwarding_Incoming_Connections
 
 
+Postinstall steps
+
+1. (Optional) To allow remote access, port 22222/tcp must be open.
+
+   sudo firewall-cmd --zone=public --add-port=22222/tcp
+   sudo firewall-cmd --permanent --zone=public --add-port=22222/tcp
+
+
 OPTIONS
     btdevs
         Comma separated list of <vendor-id>:<dev-id> pairs specifying

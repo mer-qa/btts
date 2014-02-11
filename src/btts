@@ -20,9 +20,10 @@ With the '--expect' option the output of the command can be verified to match
 the expected value. When passed, the exit code will be 0 only when both the
 command's exit code is 0 and its output matches.
 
-Additionally it is possible to specify an absolute path to any executable in
-place of <command> in order to execute it with BTTS environment set.  (The
-'--expect' option is ignored in this case.)
+Additionally, unless BTTS_RESTRICTED environment variable is defined and not
+empty, it is possible to specify an absolute path to any executable in place of
+<command> in order to execute it with BTTS environment set.  (The '--expect'
+option is ignored in this case.)
 END
 }
 
@@ -75,7 +76,12 @@ fi
 # Allow exec arbitrary command with BTTS environment
 if [[ ${btts_command} =~ ^/ && -x ${btts_command} ]]
 then
-  exec "${btts_command}" "${@}"
+  if [[ -z "${BTTS_RESTRICTED}" ]]
+  then
+    exec "${btts_command}" "${@}"
+  else
+    die "${btts_command}: Disallowed by BTTS_RESTRICTED=${BTTS_RESTRICTED}"
+  fi
 fi
 
 usage

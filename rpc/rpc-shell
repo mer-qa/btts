@@ -1,0 +1,39 @@
+#!/bin/bash
+
+usage()
+{
+  cat <<END
+usage: rpc-shell
+
+Meant to be used with SSH publickey authentication to only allow 'btts' command
+execution.
+
+Command line to execute is read from SSH_ORIGINAL_COMMAND environment variable.
+Arguments must be separated with ASCII unit separator character (0x1F).
+END
+}
+
+if [[ ${#*} -gt 0 ]]
+then
+  usage >&2
+  exit 1
+fi
+
+OLD_IFS="${IFS}"
+IFS=$'\x1F'
+COMMAND_LINE=(${SSH_ORIGINAL_COMMAND})
+IFS="${OLD_IFS}"
+
+COMMAND_NAME="${COMMAND_LINE[0]}"
+if [[ ${COMMAND_NAME} != "btts" ]]
+then
+  cat <<END
+Command ${COMMAND_NAME:-/bin/sh} disallowed. Only 'btts' command is allowed.
+END
+  exit 1
+fi
+
+unset COMMAND_LINE[0]
+
+export BTTS_RESTRICTED=1
+exec /usr/bin/btts "${COMMAND_LINE[@]}"

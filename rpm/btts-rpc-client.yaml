@@ -1,0 +1,19 @@
+Name: btts-rpc-client
+Summary: Bluetooth Test Suite RPC Client
+Version: 0.1.0
+Release: 0
+License: GPLv2
+Group: Development/Testing
+URL: https://github.com/mer-qa/btts
+Sources:
+    - "%{name}-%{version}.tar.gz"
+Requires:
+    - openssh-clients
+Description: |
+    This package contains the 'bttsr' tool from Bluetooth Test Suite
+Configure: none
+Builder: none
+Files:
+    - "%{_bindir}/bttsr"
+    - "%{_sysconfdir}/bttsr/bttsr.conf"
+    - "%{_sysconfdir}/bttsr/id_rsa"
