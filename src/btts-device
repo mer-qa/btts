@@ -13,9 +13,9 @@ import bluezutils
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
 
-class CommandInquiry:
+class CommandExpectAvailable:
     '''\
-    Inquiry the remote device.
+    Expect the remote device to be(come) available.
 
     Can be used e.g. to (1) test availability of the remote device or to (2)
     rediscover the device after it was removed with `remove' command in order to
@@ -24,8 +24,8 @@ class CommandInquiry:
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
-                'inquiry',
-                help='Inquiry the remote device',
+                'expect-available',
+                help='Expect the remote device to be(come) available',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
         parser.add_argument(
@@ -44,11 +44,53 @@ class CommandInquiry:
 
         if not device.available:
             loop = GObject.MainLoop()
-            device.available_changed.connect(lambda x: loop.quit())
+            device.available_changed.connect(
+                    lambda available: not available or loop.quit())
             GObject.timeout_add(args.timeout * 1000, loop.quit)
             loop.run()
 
         print(['false', 'true'][device.available])
+
+class CommandExpectUnavailable:
+    '''\
+    Expect the remote device to be(come) unavailable.
+
+    The way it works is trivial - it removes the device and then waits given
+    timeout for it to not become available again.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'expect-unavailable',
+                help='Expect the remote device to be(come) unavailable',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument(
+                'timeout', nargs='?', type=int, default=30,
+                help='Timeout [seconds]')
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.AdapterManager.Error])
+    def __call__(self, args):
+        adapter = btts.Adapter()
+
+        # TODO: restore old value on cleanup
+        adapter.discovering = True
+
+        device = btts.Device()
+
+        try:
+            device.remove()
+        except btts.Device.DeviceNotAvailableError:
+            pass
+
+        loop = GObject.MainLoop()
+        device.available_changed.connect(
+                lambda available: not available or loop.quit())
+        GObject.timeout_add(args.timeout * 1000, loop.quit)
+        loop.run()
+
+        print(['false', 'true'][not device.available])
 
 class CommandRemove:
     '''\
@@ -97,7 +139,8 @@ subparsers = main_parser.add_subparsers(
         help='''Valid subcommands. Pass "<subcommand> --help" to get more help
             on the given subcommand.''')
 
-CommandInquiry(subparsers)
+CommandExpectAvailable(subparsers)
+CommandExpectUnavailable(subparsers)
 CommandRemove(subparsers)
 
 args = main_parser.parse_args()
