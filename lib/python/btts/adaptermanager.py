@@ -1,6 +1,6 @@
 from gi.repository import Gio
 import copy
-import fileinput
+import dbus
 import glob
 import os
 import re
@@ -109,9 +109,15 @@ class AdapterManager:
     @staticmethod
     def _read_names():
         names = {}
-        for device_dir in glob.glob("/sys/class/bluetooth/*"):
-            name = os.path.basename(device_dir)
-            with open(device_dir + "/address", "r") as address:
-                names[address.read().strip()] = name
+        bus = dbus.SystemBus()
+        manager = dbus.Interface(bus.get_object("org.bluez", "/"),
+                                 "org.freedesktop.DBus.ObjectManager")
+        objects = manager.GetManagedObjects()
+        for path, properties in objects.items():
+            adapter_properties = properties.get('org.bluez.Adapter1')
+            if adapter_properties is not None:
+                name = os.path.basename(path)
+                address = adapter_properties['Address'].lower()
+                names[address] = name
         return names
 
