@@ -18,5 +18,13 @@
       </description>
     </key>
 
+    <key name="device" type="s">
+      <default>""</default>
+      <summary>Remote Bluetooth device to work with</summary>
+      <description>
+        Specified with Bluetooth device address.
+      </description>
+    </key>
+
   </schema>
 </schemalist>

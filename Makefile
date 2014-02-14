@@ -47,6 +47,7 @@ install:
 	$(INSTALL_PYTHON_MOD) lib/python/btts/adaptermanager.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/cliutils.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/device.py
+	$(INSTALL_PYTHON_MOD) lib/python/btts/devicemanager.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/profilemanager.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/utils.py
 

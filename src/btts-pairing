@@ -179,12 +179,10 @@ class CommandPair:
 				help='Initiate pairing',
 				formatter_class=argparse.RawDescriptionHelpFormatter,
 				description=self.__doc__)
-		parser.add_argument('address', type=str,
-				    help='Address of the device to pair with')
 		parser.set_defaults(handler=self)
 
 	def __call__(self, tool, args):
-		tool.Pair(args.address)
+		tool.Pair(btts.DeviceManager().device_address)
 
 class CommandCancel:
 	'''\

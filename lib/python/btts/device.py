@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import dbus
+import re
 
 import btts
 
@@ -27,10 +28,11 @@ class Device:
     class DeviceNotAvailableError(Error):
         pass
 
-    def __init__(self, address):
-        self._address = address
+    def __init__(self):
+        self._error = None
         self._path = None
 
+        self._manager = btts.DeviceManager()
         self._adapter = btts.Adapter()
 
         bus = dbus.SystemBus()
@@ -44,17 +46,16 @@ class Device:
         manager.connect_to_signal('InterfacesRemoved', self._on_interfaces_removed)
 
     @property
-    def address(self):
-        return self._address
-
-    @property
     def available(self):
         '''
         Is the device currently visible on the network?
 
         Exceptions:
             AdapterManager.AdapterNotSetError
+            DeviceManager.DeviceNotSetError
         '''
+        if self._error:
+            raise self._error()
         return self._path is not None
 
     @btts.utils.signal
@@ -68,6 +69,10 @@ class Device:
             raise self.DeviceNotAvailableError()
         self._adapter._adapter_iface.RemoveDevice(self._path)
 
+    @staticmethod
+    def is_valid_address(address):
+        return re.match('^[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}$', address) != None
+
     def _on_interfaces_added(self, object_path, interfaces_and_properties):
         if self.available:
             return
@@ -75,15 +80,15 @@ class Device:
             if object_path.startswith(self._adapter.path):
                 device_properties = interfaces_and_properties.get('org.bluez.Device1')
                 if (device_properties is not None and
-                        device_properties['Address'] == self._address):
+                        device_properties['Address'].lower() == self._manager.device_address):
                     self._path = object_path
                     self.available_changed(True)
-        except btts.AdapterManager.AdapterNotSetError:
-            pass
+            self._error = None
+        except (btts.DeviceManager.DeviceNotSetError,
+                btts.AdapterManager.AdapterNotSetError) as e:
+            self._error = type(e)
 
     def _on_interfaces_removed(self, object_path, interfaces):
-        if not self.available:
-            return
         if object_path == self._path:
             self._path = None
             self.available_changed(False)
