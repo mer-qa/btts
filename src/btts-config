@@ -77,6 +77,32 @@ class CommandHostAlias:
         else:
             adapter_manager.set_host_alias(args.alias)
 
+class CommandDevice:
+    '''\
+    Get/Set the remote device to work with.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'device',
+                help='Get/Set the remote device to work with',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument(
+                'device', nargs='?', type=str,
+                help='Device address')
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.DeviceManager.Error])
+    @bad_usage_on([btts.DeviceManager.InvalidAddressError])
+    def __call__(self, args):
+        device_manager = btts.DeviceManager()
+
+        if args.device == None:
+            print(device_manager.device_address)
+        else:
+            device_manager.device_address = args.device
+
 # Main argument parser
 main_parser = argparse.ArgumentParser(
         prog='btts config',
@@ -88,6 +114,7 @@ subparsers = main_parser.add_subparsers(
 
 CommandAdapter(subparsers)
 CommandHostAlias(subparsers)
+CommandDevice(subparsers)
 
 args = main_parser.parse_args()
 if not args.subcommand:

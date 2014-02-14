@@ -8,6 +8,9 @@ __all__ = [
            # from device
            'Device',
 
+           # from devicemanager
+           'DeviceManager',
+
            # from profilemanager
            'ProfileManager',
            ]
@@ -22,4 +25,5 @@ import btts.utils
 from btts.adapter import Adapter
 from btts.adaptermanager import AdapterManager
 from btts.device import Device
+from btts.devicemanager import DeviceManager
 from btts.profilemanager import ProfileManager

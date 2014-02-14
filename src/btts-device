@@ -15,22 +15,19 @@ from   btts.cliutils import failure_on, bad_usage_on, error_handler
 
 class CommandInquiry:
     '''\
-    Inquiry a remote device.
+    Inquiry the remote device.
 
-    Can be used e.g. to (1) test availability of a remote device or to (2)
-    rediscover a device previously removed with `remove' command in order to
+    Can be used e.g. to (1) test availability of the remote device or to (2)
+    rediscover the device after it was removed with `remove' command in order to
     unpair it.
     '''
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'inquiry',
-                help='Inquiry a remote device',
+                help='Inquiry the remote device',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
-        parser.add_argument(
-                'address', type=str,
-                help='Device address')
         parser.add_argument(
                 'timeout', nargs='?', type=int, default=30,
                 help='Timeout [seconds]')
@@ -43,7 +40,7 @@ class CommandInquiry:
         # TODO: restore old value on cleanup
         adapter.discovering = True
 
-        device = btts.Device(args.address)
+        device = btts.Device()
 
         if not device.available:
             loop = GObject.MainLoop()
@@ -55,9 +52,9 @@ class CommandInquiry:
 
 class CommandRemove:
     '''\
-    Remove a remote device and associated pairing information.
+    Remove the remote device and associated pairing information.
 
-    Main use is to unpair a device. The device can be then rediscovered with
+    Main use is to unpair the device. The device can be then rediscovered with
     the `inquiry' command.
 
     See org.bluez.Adapter1.RemoveDevice() in bluez5 D-Bus API documentation.
@@ -68,17 +65,14 @@ class CommandRemove:
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'remove',
-                help='Remove a remote device and associated pairing information',
+                help='Remove the remote device and associated pairing information',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
-        parser.add_argument(
-                'address', type=str,
-                help='Device address')
         parser.set_defaults(handler=self)
 
     @failure_on([btts.AdapterManager.Error])
     def __call__(self, args):
-        device = btts.Device(args.address)
+        device = btts.Device()
 
         try:
             device.remove()
