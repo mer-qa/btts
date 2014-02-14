@@ -45,7 +45,7 @@ necessary packages present.
 Depending on your host setup, the minimal set of arguments might work for you.
 (Run ./fedora/kickstart.sh --help for details.)
 
-(host)$ ./fedora/kickstart.sh <vendor-id>:<device-id> pool=default
+  (host)$ ./fedora/kickstart.sh <vendor-id>:<device-id> pool=default
 
 Replace <vendor-id>:<device-id> with the ID pair of the USB Bluetooth device
 you want to be made available to the virtual machine. More devices can be
@@ -55,18 +55,52 @@ When installation is finished and the machine successfully rebooted, hit Ctrl-]
 to leave the serial console and log in via SSH using the password you provided
 during kickstart.sh execution. (Provided mDNS is setup on your host).
 
-(host)$ ssh btts@btts.local
+  (host)$ ssh btts@btts.local
 
 Now install BTTS inside the virtual machine.
 
-(guest)$ git clone https://github.com/mer-qa/btts.git
-(guest)$ cd btts
-(guest)$ ./fedora/rebuildall.sh
-    (Answer Yes to register local yum repository)
-(guest)$ ./fedora/reinstallall.sh
-(guest)$ sudo systemctl start btts.target
+  (guest)$ git clone https://github.com/mer-qa/btts.git
+  (guest)$ cd btts
+  (guest)$ ./fedora/rebuildall.sh
+      (Answer Yes to register local yum repository)
+  (guest)$ ./fedora/reinstallall.sh
+  (guest)$ sudo systemctl start btts.target
 
 
-EXAMPLE TEST EXECUTION
+EXAMPLE TEST SESSION
 
-...TODO...
+Select adapter to work with
+
+  (guest)$ btts config adapter hci0
+  (guest)$ btts adapter powered true
+
+Select remote device to work with
+
+  (guest)$ btts config device de:ad:be:ef:de:ad
+  (guest)$ btts device expect-available
+  true
+
+Initiate pairing
+
+  (guest)$ btts pairing state
+  initial
+  (guest)$ btts pairing pair
+  (guest)$ btts pairing state
+  pairing
+
+Confirm pairing
+
+  (guest)$ btts agent active-call
+  RequestConfirmationCall
+      (Meanwhile confirm pairing on the device being tested)
+  (guest)$ btts agent finish-active-call
+  (guest)$ btts agent active-call
+  NoCall
+  (guest)$ btts pairing state
+  succeeded
+
+Reset pairing tool to its initial state
+
+  (guest)$ btts pairing reset
+  (guest)$ btts pairing state
+  initial
