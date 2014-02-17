@@ -27,6 +27,12 @@ class Device:
         manager.connect_to_signal('InterfacesAdded', self._on_interfaces_added)
         manager.connect_to_signal('InterfacesRemoved', self._on_interfaces_removed)
 
+    def _ensure_available(self):
+        if self._error:
+            raise self._error()
+        if not self.available:
+            raise self.DeviceNotAvailableError()
+
     @property
     def available(self):
         '''
@@ -45,10 +51,7 @@ class Device:
         pass
 
     def remove(self):
-        if self._error:
-            raise self._error()
-        if not self.available:
-            raise self.DeviceNotAvailableError()
+        self._ensure_available()
         self._adapter._adapter_iface.RemoveDevice(self._path)
 
     @staticmethod
