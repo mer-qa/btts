@@ -17,6 +17,9 @@ class Device:
         self._manager = btts.DeviceManager()
         self._adapter = btts.Adapter()
 
+        self._device_object = None
+        self._properties_iface = None
+
         bus = dbus.SystemBus()
         manager = dbus.Interface(bus.get_object("org.bluez", "/"),
                                  "org.freedesktop.DBus.ObjectManager")
@@ -50,6 +53,16 @@ class Device:
     def available_changed(self, available):
         pass
 
+    @property
+    def trusted(self):
+        self._ensure_available()
+        return self._properties_iface.Get('org.bluez.Device1', 'Trusted')
+
+    @trusted.setter
+    def trusted(self, trusted):
+        self._ensure_available()
+        return self._properties_iface.Set('org.bluez.Device1', 'Trusted', trusted)
+
     def remove(self):
         self._ensure_available()
         self._adapter._adapter_iface.RemoveDevice(self._path)
@@ -67,6 +80,10 @@ class Device:
                 if (device_properties is not None and
                         device_properties['Address'].lower() == self._manager.device_address):
                     self._path = object_path
+                    bus = dbus.SystemBus()
+                    self._device_object = bus.get_object('org.bluez', self._path)
+                    self._properties_iface = dbus.Interface(self._device_object,
+                                                            dbus.PROPERTIES_IFACE)
                     self.available_changed(True)
             self._error = None
         except (btts.DeviceManager.DeviceNotSetError,
