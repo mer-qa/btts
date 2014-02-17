@@ -109,6 +109,34 @@ class CommandExpectUnavailable:
 
         print(['false', 'true'][not device.available])
 
+class CommandTrust:
+    '''\
+    Get/Set the device as trusted
+
+    See org.bluez.Device1.Trusted property in bluez5 D-Bus API documentation.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'trusted',
+                help='Get/Set the device as trusted',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('trusted', nargs='?', type=btts.cliutils.boolean,
+                            help='Device trusted state (true|false)')
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.AdapterManager.Error, btts.DeviceManager.Error,
+                 btts.Device.Error])
+    def __call__(self, args):
+        device = btts.Device()
+
+        if args.trusted == None:
+            print(["false", "true"][device.trusted])
+        else:
+            device.trusted = args.trusted
+            # TODO: wait for change
+
 class CommandRemove:
     '''\
     Remove the remote device and associated pairing information.
@@ -158,6 +186,7 @@ subparsers = main_parser.add_subparsers(
 
 CommandExpectAvailable(subparsers)
 CommandExpectUnavailable(subparsers)
+CommandTrust(subparsers)
 CommandRemove(subparsers)
 
 args = main_parser.parse_args()
