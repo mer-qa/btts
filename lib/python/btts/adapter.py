@@ -69,8 +69,11 @@ class Adapter:
     @discoverable.setter
     def discoverable(self, discoverable):
         self._ensure_ready()
-        return self._properties_iface.Set('org.bluez.Adapter1', 'Discoverable',
-                                          discoverable)
+        self._properties_iface.Set('org.bluez.Adapter1', 'Discoverable',
+                                   discoverable)
+        if discoverable:
+            self._properties_iface.Set('org.bluez.Adapter1',
+                                       'DiscoverableTimeout', dbus.UInt32(0))
 
     @property
     def adapter_iface(self):

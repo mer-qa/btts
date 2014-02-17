@@ -47,6 +47,9 @@ class CommandDiscoverable:
     state.
 
     This is equivalent to access the org.bluez.Adapter1.Discoverable D-Bus property.
+
+    When setting discoverable state to true, the discoverable timeout is set to
+    infinite (setting org.bluez.Adapter1.DiscoverableTimeout)
     '''
 
     def __init__(self, subparsers):
