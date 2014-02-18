@@ -24,7 +24,14 @@ class CommandAdapter:
                 help='Get/Set adapter to work with',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
-        parser.add_argument(
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument(
+                '--raw-device', action='store_true',
+                help='Print raw device name (e.g. "hci0"), do not resolve alias')
+        group.add_argument(
+                '--address', action='store_true',
+                help='Print adapter address instead of device name or alias')
+        group.add_argument(
                 'adapter', nargs='?', type=str,
                 help='Device name (e.g. "hci0") or alias (see above)')
         parser.set_defaults(handler=self)
@@ -35,7 +42,12 @@ class CommandAdapter:
         adapter_manager = btts.AdapterManager()
 
         if args.adapter == None:
-            print(adapter_manager.get_adapter())
+            if args.raw_device:
+                print(adapter_manager.get_adapter_no_alias())
+            elif args.address:
+                print(btts.Adapter().address)
+            else:
+                print(adapter_manager.get_adapter())
         else:
             adapter_manager.set_adapter(args.adapter)
 
