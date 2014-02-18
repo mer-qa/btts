@@ -52,6 +52,11 @@ class Adapter:
         return self._adapter_object.object_path
 
     @property
+    def address(self):
+        self._ensure_ready()
+        return self._properties_iface.Get('org.bluez.Adapter1', 'Address')
+
+    @property
     def powered(self):
         self._ensure_ready()
         return self._properties_iface.Get('org.bluez.Adapter1', 'Powered')
