@@ -63,6 +63,7 @@ class ActiveCall(dbus.service.Object):
 	def __init__(self, reply_handler, error_handler):
 		self.reply_handler = reply_handler
 		self.error_handler = error_handler
+                self.args = {}
 
 	def name(self):
 		return self.__class__.__name__
@@ -85,7 +86,7 @@ class NoCall(ActiveCall):
 class RequestPinCodeCall(ActiveCall):
 	def __init__(self, device, reply_handler, error_handler):
 		ActiveCall.__init__(self, reply_handler, error_handler)
-		self.arg_device = device
+		self.args = { 'device' : device }
 
 	def finish(self, reply):
 		assert reply
@@ -95,8 +96,7 @@ class RequestPinCodeCall(ActiveCall):
 class DisplayPinCodeCall(ActiveCall):
 	def __init__(self, device, pin_code, reply_handler, error_handler):
 		ActiveCall.__init__(self, reply_handler, error_handler)
-		self.arg_device = device
-		self.arg_pin_code = pin_code
+		self.args = { 'device' : device, 'pin_code' : pin_code }
 
 	def finish(self, reply):
 		assert not reply
@@ -105,7 +105,7 @@ class DisplayPinCodeCall(ActiveCall):
 class RequestPasskeyCall(ActiveCall):
 	def __init__(self, device, reply_handler, error_handler):
 		ActiveCall.__init__(self, reply_handler, error_handler)
-		self.arg_device = device
+		self.args = { 'device' : device }
 
 	def finish(self, reply):
 		assert reply
@@ -115,8 +115,7 @@ class RequestPasskeyCall(ActiveCall):
 class RequestConfirmationCall(ActiveCall):
 	def __init__(self, device, passkey, reply_handler, error_handler):
 		ActiveCall.__init__(self, reply_handler, error_handler)
-		self.arg_device = device
-		self.arg_passkey = passkey
+		self.args = { 'device' : device, 'passkey' : passkey }
 
 	def finish(self, reply):
 		assert not reply
@@ -125,7 +124,7 @@ class RequestConfirmationCall(ActiveCall):
 class RequestAuthorizationCall(ActiveCall):
 	def __init__(self, device, reply_handler, error_handler):
 		ActiveCall.__init__(self, reply_handler, error_handler)
-		self.arg_device = device
+		self.args = { 'device' : device }
 
 	def finish(self, reply):
 		assert not reply
@@ -134,8 +133,7 @@ class RequestAuthorizationCall(ActiveCall):
 class AuthorizeServiceCall(ActiveCall):
 	def __init__(self, device, uuid, reply_handler, error_handler):
 		ActiveCall.__init__(self, reply_handler, error_handler)
-		self.arg_device = device
-		self.arg_uuid = uuid
+		self.args = { 'device' : device, 'uuid' : uuid }
 
 	def finish(self, reply):
 		assert not reply
@@ -287,9 +285,9 @@ class Agent(dbus.service.Object):
 
 	#------------------------------------------------------------
 	@dbus_service_method(AGENT_TEST_INTERFACE,
-			     in_signature="", out_signature="s")
+			     in_signature="", out_signature="sa{sv}")
 	def GetActiveCall(self):
-		return self.state.active_call.name()
+		return (self.state.active_call.name(), self.state.active_call.args)
 
 	@dbus_service_signal(AGENT_TEST_INTERFACE,
 			     signature="s")
@@ -364,6 +362,18 @@ class CommandActiveCall:
 
 	If no active call is waiting, the string "None" is printed.
 
+	This is the list of possible call names and their arguments:
+
+	    - RequestPinCodeCall (device)
+	    - DisplayPinCodeCall (device, pin_code)
+	    - RequestPasskeyCall (device)
+	    - RequestConfirmationCall (device, passkey)
+	    - RequestAuthorizationCall (device)
+	    - AuthorizeServiceCall (device, uuid)
+	    - CancelCall ()
+
+	See org.bluez.Agent1 interface in bluez5 D-Bus API documentation.
+
 	To finish a waiting call, see `finish-active-call', `reject-active-call'
 	and `cancel-active-call'.
 	'''
@@ -374,10 +384,16 @@ class CommandActiveCall:
 				help='Get active call',
 				formatter_class=argparse.RawDescriptionHelpFormatter,
 				description=self.__doc__)
+		parser.add_argument('--get-arg', type=str,
+                                    help='Instead of call name, get value of \
+                                          the given argument')
 		parser.set_defaults(handler=self)
 
 	def __call__(self, agent, args):
-		print(agent.GetActiveCall())
+		if args.get_arg == None:
+			print(agent.GetActiveCall()[0])
+		else:
+			print(agent.GetActiveCall()[1][args.get_arg])
 
 class CommandExpectActiveCall:
 	'''\
@@ -404,7 +420,7 @@ class CommandExpectActiveCall:
 		parser.set_defaults(handler=self)
 
 	def __call__(self, agent, args):
-		active_call = agent.GetActiveCall()
+		active_call = agent.GetActiveCall()[0]
                 if active_call == args.call:
                         print('true')
                         return
