@@ -90,6 +90,30 @@ class CommandDiscoverable:
             adapter.discoverable = args.discoverable
             # TODO: wait for change
 
+class CommandHasFeature:
+    '''\
+    Test adapter features.
+
+    It prints "true" or "false" to indicate if adapter implements the given
+    feature.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'has-feature',
+                help='Test adapter features',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('feature', type=str,
+                            choices=btts.Adapter.FEATURES.keys(),
+                            help='Feature to test for.')
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.AdapterManager.Error])
+    def __call__(self, args):
+        adapter = btts.Adapter()
+        print(["false", "true"][adapter.has_feature(args.feature)])
+
 # Main argument parser
 main_parser = argparse.ArgumentParser(
         prog='btts adapter',
@@ -101,6 +125,7 @@ subparsers = main_parser.add_subparsers(
 
 CommandPowered(subparsers)
 CommandDiscoverable(subparsers)
+CommandHasFeature(subparsers)
 
 args = main_parser.parse_args()
 if not args.subcommand:
