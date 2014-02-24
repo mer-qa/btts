@@ -39,32 +39,38 @@ class CommandExpectAvailable:
     unpair it.
     '''
 
+    _REASONABLE_TIMEOUT = 20000 # [ms]
+    _NUMBER_TRIES = 3
+
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'expect-available',
                 help='Expect the remote device to be(come) available',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
-        parser.add_argument(
-                'timeout', nargs='?', type=int, default=30,
-                help='Timeout [seconds]')
         parser.set_defaults(handler=self)
 
     @failure_on([btts.AdapterManager.Error])
     def __call__(self, args):
         adapter = btts.Adapter()
-
-        # TODO: restore old value on cleanup
-        adapter.discovering = True
-
         device = btts.Device()
 
-        if not device.available:
+        was_available = device.available
+
+        for i in range(0, self._NUMBER_TRIES):
+            adapter.scan()
+
+            if not was_available and device.available:
+                break
+
             loop = GObject.MainLoop()
             device.available_changed.connect(
                     lambda available: not available or loop.quit())
-            GObject.timeout_add(args.timeout * 1000, loop.quit)
+            GObject.timeout_add(self._REASONABLE_TIMEOUT, loop.quit)
             loop.run()
+
+            if device.available:
+                break
 
         print(['false', 'true'][device.available])
 
@@ -72,9 +78,12 @@ class CommandExpectUnavailable:
     '''\
     Expect the remote device to be(come) unavailable.
 
-    The way it works is trivial - it removes the device and then waits given
-    timeout for it to not become available again.
+    The way it works is trivial - it removes the device and then performs scan,
+    expecting it to not become available again.
     '''
+
+    _REASONABLE_TIMEOUT = 10000 # [ms]
+    _NUMBER_TRIES = 2
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
@@ -82,18 +91,11 @@ class CommandExpectUnavailable:
                 help='Expect the remote device to be(come) unavailable',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
-        parser.add_argument(
-                'timeout', nargs='?', type=int, default=30,
-                help='Timeout [seconds]')
         parser.set_defaults(handler=self)
 
     @failure_on([btts.AdapterManager.Error])
     def __call__(self, args):
         adapter = btts.Adapter()
-
-        # TODO: restore old value on cleanup
-        adapter.discovering = True
-
         device = btts.Device()
 
         try:
@@ -101,11 +103,14 @@ class CommandExpectUnavailable:
         except btts.Device.DeviceNotAvailableError:
             pass
 
-        loop = GObject.MainLoop()
-        device.available_changed.connect(
-                lambda available: not available or loop.quit())
-        GObject.timeout_add(args.timeout * 1000, loop.quit)
-        loop.run()
+        for i in range(0, self._NUMBER_TRIES):
+            adapter.scan()
+
+            loop = GObject.MainLoop()
+            device.available_changed.connect(
+                    lambda available: available or loop.quit())
+            GObject.timeout_add(self._REASONABLE_TIMEOUT, loop.quit)
+            loop.run()
 
         print(['false', 'true'][not device.available])
 

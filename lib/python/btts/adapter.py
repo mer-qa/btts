@@ -16,7 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import dbus
+import subprocess
+import sys
 
 import btts
 
@@ -77,24 +81,6 @@ class Adapter:
         return self._properties_iface.Set('org.bluez.Adapter1', 'Powered', powered)
 
     @property
-    def discovering(self):
-        self._ensure_ready()
-        return self._properties_iface.Get('org.bluez.Adapter1', 'Discovering')
-
-    @discovering.setter
-    def discovering(self, discovering):
-        self._ensure_ready()
-        if discovering:
-            self._adapter_iface.StartDiscovery()
-        else:
-            # StopDiscovery() returns error when not discovering and the error is
-            # not easily distinguishable from other failures -> not using
-            # exceptions to handle this. OTOH sometimes bluez reports discovering
-            # is on while it is not.
-            if discovering != self.discovering:
-                self._adapter_iface.StopDiscovery()
-
-    @property
     def discoverable(self):
         self._ensure_ready()
         return self._properties_iface.Get('org.bluez.Adapter1', 'Discoverable')
@@ -107,6 +93,27 @@ class Adapter:
         if discoverable:
             self._properties_iface.Set('org.bluez.Adapter1',
                                        'DiscoverableTimeout', dbus.UInt32(0))
+
+    def scan(self, refresh=False):
+        self._ensure_ready()
+
+        try:
+            self._adapter_iface.StopDiscovery()
+        except dbus.DBusException as e:
+            if e.get_dbus_name() != 'org.bluez.Error.Failed':
+                raise e
+
+        name = self.adapter_manager.get_adapter_no_alias()
+        args = ['hcitool', '-i', name, 'scan', '--flush']
+        if refresh:
+            args.append('--refresh')
+        subprocess.call(args, stdout=sys.stderr)
+
+        try:
+            self._adapter_iface.StartDiscovery()
+        except dbus.DBusException as e:
+            if e.get_dbus_name() != 'org.bluez.Error.InProgress':
+                raise e
 
     @property
     def adapter_iface(self):
