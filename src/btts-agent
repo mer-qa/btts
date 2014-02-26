@@ -329,6 +329,13 @@ class Agent(dbus.service.Object):
 			     in_signature="s", out_signature="")
 	def SetCapability(self, capability):
 		self.capability = capability
+		self.Reset()
+
+	#------------------------------------------------------------
+	@dbus_service_method(AGENT_TEST_INTERFACE,
+			     in_signature="", out_signature="")
+	def Reset(self):
+		self.state.active_call = NoCall()
 		self.manager.UnregisterAgent(self.__dbus_object_path__)
 		self.manager.RegisterAgent(self.__dbus_object_path__, self.capability)
 		self.manager.RequestDefaultAgent(self.__dbus_object_path__)
@@ -600,6 +607,25 @@ class CommandCapability:
 			print(agent.GetCapability())
 		else:
 			agent.SetCapability(args.capability)
+
+class CommandReset:
+	'''\
+	Reset agent state.
+
+	Agent is unregistered and registered again, active-call is reset to
+	'NoCall'.
+	'''
+
+	def __init__(self, subparsers):
+		parser = subparsers.add_parser(
+				'reset',
+				help='Reset agent state',
+				formatter_class=argparse.RawDescriptionHelpFormatter,
+				description=self.__doc__)
+		parser.set_defaults(handler=self)
+
+	def __call__(self, agent, args):
+		agent.Reset()
 
 
 if __name__ == '__main__':
