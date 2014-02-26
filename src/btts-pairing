@@ -86,7 +86,7 @@ class PairingTool(dbus.service.Object):
 	@dbus_service_method(TOOL_INTERFACE,
 			     in_signature="s", out_signature="")
 	def Pair(self, hw_address):
-		assert self.state == self.State.Initial
+		self.Reset()
 
 		adapter = btts.AdapterManager().get_adapter_no_alias()
 		self.device = bluezutils.find_device(hw_address.upper(), adapter)
@@ -156,11 +156,6 @@ class PairingTool(dbus.service.Object):
 	@dbus_service_method(TOOL_INTERFACE,
 			     in_signature="", out_signature="")
 	def Reset(self):
-		assert (self.state == self.State.Succeeded or
-			self.state == self.State.Failed or
-			self.state == self.State.Cancelled or
-			self.state == self.State.CancelFailed)
-
 		self.state = self.State.Initial
 		self.error = None
 		self.device = None
