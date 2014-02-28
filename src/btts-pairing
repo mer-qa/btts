@@ -238,7 +238,7 @@ class CommandExpectState:
 				description=self.__doc__)
 		parser.add_argument('state', type=self.state,
 				    help='Expected state')
-		parser.add_argument('timeout', nargs='?', type=int, default=5,
+		parser.add_argument('timeout', nargs='?', type=int, default=35,
 				    help='Timeout [secs]')
 		parser.set_defaults(handler=self)
 
