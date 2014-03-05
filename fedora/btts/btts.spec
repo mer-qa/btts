@@ -10,6 +10,7 @@ Source0:	%{name}-%{version}.tar.gz
 
 Requires:	bluez
 Requires:	dconf
+Requires:	echoprint-codegen
 Requires:	ofono
 Requires:	pulseaudio
 Requires:	pulseaudio-module-bluetooth

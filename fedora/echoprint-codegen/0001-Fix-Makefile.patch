@@ -1,0 +1,33 @@
+From 73e69ef83e46ee3673f6befb41fdef164f0effd4 Mon Sep 17 00:00:00 2001
+From: Martin Kampas <martin.kampas@tieto.com>
+Date: Wed, 5 Mar 2014 12:13:43 +0100
+Subject: [PATCH] Fix Makefile
+
+---
+ src/Makefile | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/Makefile b/src/Makefile
+index 3a9f803..7617631 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -76,12 +76,12 @@ install: all
+ 	install -d $(DESTDIR)$(LIBDIR)
+ ifeq ($(UNAME),Darwin)
+ 	install -m 755 libcodegen.$(VERSION).dylib $(DESTDIR)$(LIBDIR)
+-	ln -fs $(DESTDIR)$(LIBDIR)/libcodegen.$(VERSION) $(DESTDIR)$(LIBDIR)/libcodegen.$(VERSION_MAJ).dylib
+-	ln -fs $(DESTDIR)$(LIBDIR)/libcodegen.$(VERSION_MAJ).dylib $(DESTDIR)$(LIBDIR)/libcodegen.dylib
++	ln -fs libcodegen.$(VERSION) $(DESTDIR)$(LIBDIR)/libcodegen.$(VERSION_MAJ).dylib
++	ln -fs libcodegen.$(VERSION_MAJ).dylib $(DESTDIR)$(LIBDIR)/libcodegen.dylib
+ else
+ 	install -m 755 $(LIBNAME).$(VERSION) $(DESTDIR)$(LIBDIR)
+-	ln -fs $(DESTDIR)$(LIBDIR)/$(LIBNAME).$(VERSION) $(DESTDIR)$(LIBDIR)/$(SONAME)
+-	ln -fs $(DESTDIR)$(LIBDIR)/$(SONAME) $(DESTDIR)$(LIBDIR)/$(LIBNAME)
++	ln -fs $(LIBNAME).$(VERSION) $(DESTDIR)$(LIBDIR)/$(SONAME)
++	ln -fs $(SONAME) $(DESTDIR)$(LIBDIR)/$(LIBNAME)
+ endif
+ 
+ .PHONY: clean all libcodegen echoprint-codegen install
+-- 
+1.8.4.2
+
