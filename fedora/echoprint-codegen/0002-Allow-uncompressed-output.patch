@@ -1,0 +1,39 @@
+From 64b177738860b1458f9d53e6c037ac7ae1b7488a Mon Sep 17 00:00:00 2001
+From: Martin Kampas <martin.kampas@tieto.com>
+Date: Thu, 6 Mar 2014 10:55:46 +0100
+Subject: [PATCH] Allow uncompressed output
+
+---
+ src/Codegen.cxx | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/Codegen.cxx b/src/Codegen.cxx
+index b391b38..2dab466 100644
+--- a/src/Codegen.cxx
++++ b/src/Codegen.cxx
+@@ -4,6 +4,7 @@
+ //
+ 
+ 
++#include <cstdlib>
+ #include <sstream>
+ #include <iostream>
+ #include <iomanip>
+@@ -52,6 +53,14 @@ string Codegen::createCodeString(vector<FPCode> vCodes) {
+         return "";
+     }
+     std::ostringstream codestream;
++    if (std::getenv("BTTS_ECHOPRINT_NOCOMPRESS") != 0) {
++        for (uint i = 0; i < vCodes.size(); i++) {
++            codestream << vCodes[i].code << ' ' << vCodes[i].frame;
++            if (i < vCodes.size() - 1)
++                codestream << ' ';
++        }
++        return codestream.str();
++    }
+     codestream << std::setfill('0') << std::hex;
+     for (uint i = 0; i < vCodes.size(); i++)
+         codestream << std::setw(5) << vCodes[i].frame;
+-- 
+1.8.4.2
+

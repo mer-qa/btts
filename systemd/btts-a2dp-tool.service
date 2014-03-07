@@ -1,0 +1,14 @@
+[Unit]
+Description=Bluetooth test suite - A2DP tool
+After=bluetooth.service
+StopWhenUnneeded=True
+
+[Service]
+Type=dbus
+BusName=org.merproject.btts.A2dpTool
+ExecStart=/usr/bin/btts a2dp --server
+EnvironmentFile=/usr/libexec/btts/environment
+User=btts
+
+[Install]
+RequiredBy=btts.target

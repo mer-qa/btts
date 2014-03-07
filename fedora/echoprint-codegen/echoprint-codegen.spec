@@ -6,6 +6,7 @@ License:	MIT
 URL:		https://github.com/echonest/echoprint-codegen
 Source0:	https://github.com/echonest/echoprint-codegen/archive/v%{version}.tar.gz
 Patch0:		0001-Fix-Makefile.patch
+Patch1:		0002-Allow-uncompressed-output.patch
 BuildRequires:	boost-devel
 BuildRequires:	taglib-devel
 BuildRequires:	zlib-devel
@@ -28,6 +29,7 @@ developing applications that use %{name}.
 %prep
 %setup -q -n %{name}-%{version}
 %patch0 -p1
+%patch1 -p1
 
 %build
 make %{?_smp_mflags} \

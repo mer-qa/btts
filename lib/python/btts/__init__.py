@@ -39,6 +39,7 @@ if sys.version_info.major > 2:
     import btts.cliutils
 
 import btts.utils
+import btts.echonest
 
 from btts.adapter import Adapter
 from btts.adaptermanager import AdapterManager

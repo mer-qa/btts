@@ -20,10 +20,116 @@
 import argparse
 import dbus
 import dbus.mainloop.glib
+from   gi.repository import GObject
+import os
+import subprocess
 import sys
+import time
 
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
+from   btts.utils import dbus_service_method, dbus_service_signal
+
+SAMPLE_PATH = '/tmp/btts-a2dp-sample'
+SAMPLE_CODE_PATH = '/tmp/btts-a2dp-sample.code'
+SAMPLE_MAX_SIZE = 50 << 20 # Bytes
+MATCHED_PATH = '/tmp/btts-a2dp-match.wav'
+
+REASONABLE_RECORD_WAIT_TIME = 30 # seconds; keep in sync with doc
+REASONABLE_TERMINATE_TIME = 5 # seconds
+
+SERVER_BUS_NAME = 'org.merproject.btts.A2dpTool'
+SERVER_PATH = '/org/merproject/btts/A2dpTool'
+SERVER_INTERFACE = 'org.merproject.btts.A2dpTool'
+SERVER_ERROR_NAME = 'org.merproject.btts.A2dpTool.Error'
+
+class Server(dbus.service.Object):
+    class Error(Exception):
+        _dbus_error_name = SERVER_ERROR_NAME
+
+    class NotReadyError(Error):
+        def __init__(self):
+            Server.Error.__init__(self, 'Not ready')
+
+    class NotStartedError(Error):
+        def __init__(self):
+            Server.Error.__init__(self, 'Operation not started')
+
+    class RecordTooShortError(Error):
+        def __init__(self, actual_duration, expected_duration):
+            Server.Error.__init__(self, ('The duration of the recorded '
+                                         'audio (%dsecs) is shorter than '
+                                         'expected (%dsecs)')
+                                        % (actual_duration, expected_duration))
+
+    def __init__(self, bus, path):
+        dbus.service.Object.__init__(self, bus, path)
+        self._sox = None
+
+    def _ensure_ready(self):
+        profile_manager = btts.ProfileManager()
+        ready = profile_manager.get_profiles_state()['a2dp']
+        if not ready:
+            raise self.NotReadyError()
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature="i", out_signature="")
+    def StartRecord(self, duration):
+        self._ensure_ready()
+
+        if self._sox != None:
+            warnings.warn('Recording in progress. Restarting!')
+            self._sox.terminate()
+            try:
+                self._sox.wait(timeout=REASONABLE_TERMINATE_TIME)
+            except subprocess.TimeoutExpired:
+                warnings.warn('SoX refused to terminate. Will be killed.')
+                self._sox.kill()
+
+        sox_cmd = (('sox -q -t pulseaudio btts_null.monitor %s ' +
+                    'silence 1 0.50 0.1%% trim 0 %d')
+                   % (MATCHED_PATH, duration)).split()
+        self._sox = subprocess.Popen(sox_cmd)
+        self._sox_start_time = time.monotonic()
+        self._record_duration = duration
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature="", out_signature="is")
+    def WaitRecord(self):
+        self._ensure_ready()
+
+        if self._sox == None:
+            raise self.NotStartedError()
+
+        total_wait_time = self._record_duration + REASONABLE_RECORD_WAIT_TIME
+        elapsed_wait_time = time.monotonic() - self._sox_start_time
+        remaining = total_wait_time - elapsed_wait_time
+
+        if remaining < 0:
+            warnings.warn(('Called too late - have been recording for longer '
+                           '(%dsecs) than the required duration (%dsecs).')
+                          % (elapsed_wait_time, self._record_duration))
+            remaining = 0
+
+        try:
+            self._sox.wait(timeout=remaining)
+        except subprocess.TimeoutExpired:
+            self._sox.terminate()
+
+        try:
+            self._sox.wait(timeout=REASONABLE_TERMINATE_TIME)
+        except subprocess.TimeoutExpired:
+            self._sox.kill()
+            raise btts.cliutils.Failure('SoX refused to terminate')
+        finally:
+            self._sox = None
+
+        duration, code = btts.echonest.codegen(MATCHED_PATH)
+
+        if duration < self._record_duration:
+            raise self.RecordTooShortError(duration, self._record_duration)
+
+        return (duration, code)
 
 class CommandEnabled:
     '''\
@@ -44,7 +150,7 @@ class CommandEnabled:
         parser.set_defaults(handler=self)
 
     @failure_on([btts.ProfileManager.Error])
-    def __call__(self, args):
+    def __call__(self, server, args):
         profile_manager = btts.ProfileManager()
 
         if args.enabled == None:
@@ -52,6 +158,173 @@ class CommandEnabled:
             print(['false', 'true'][state])
         else:
             profile_manager.enable_profile('a2dp', args.enabled)
+
+class CommandSetSample:
+    '''\
+    Set sample to match the recorded/played audio against.
+
+    The audio sample is read from stdin.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'set-sample',
+                help='Set sample to match the recorded/played audio against',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    def __call__(self, server, args):
+        with open(SAMPLE_PATH, 'wb') as sample_file:
+            os.sendfile(sample_file.fileno(), sys.stdin.buffer.fileno(),
+                        None, SAMPLE_MAX_SIZE)
+        code = btts.echonest.codegen(SAMPLE_PATH)[1]
+        with open(SAMPLE_CODE_PATH, 'w') as sample_code_file:
+            sample_code_file.write(code)
+
+class CommandAsyncRecordAndVerify:
+    '''\
+    Asynchronously record and match audio against the stored sample.
+
+    It will try to record exactly `duration' seconds of received audio data
+    within `duration' + 30 seconds and then match it against the sample stored
+    with `set-sample` command.
+
+    Use `async-record-and-verify-wait` to query the result.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'async-record-and-verify',
+                help='Asynchronously record and match audio against the stored sample',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('duration', nargs='?', type=int, default=20,
+                            help='Record duration [secs]')
+        parser.set_defaults(handler=self)
+
+    @failure_on([Server.Error])
+    def __call__(self, server, args):
+        server.StartRecord(args.duration)
+
+class CommandAsyncRecordAndVerifyWait:
+    '''\
+    Match the asynchronously recorded audio against the stored sample.
+
+    This command blocks until the asynchronous procedure started with
+    `async-record-and-verify` finishes and then matches the recorded audio
+    against the stored sample.
+
+    Prints "true" or "false" to indicate if the recorded audio matches the
+    stored sample.
+
+    Exits with non zero when audio of the given duration cannot be recorded.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'async-record-and-verify-wait',
+                help='Match the asynchronously recorded audio against the stored sample',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([Server.Error])
+    def __call__(self, server, args):
+        (duration, code) = server.WaitRecord()
+
+        with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
+            sample_code = sample_code_file.read()
+
+        ok = btts.echonest.match_code_string(wanted=sample_code,
+                                             tested=code)
+        print(['false', 'true'][ok])
+
+class CommandRecordAndVerify:
+    '''\
+    Record and match audio against the stored sample.
+
+    It will try to record exactly `duration' seconds of received audio data
+    within `duration' + 30 seconds and then match it against the sample stored
+    with `set-sample` command.
+
+    Prints "true" or "false" to indicate if the recorded audio matches the
+    stored sample.
+
+    Exits with non zero when audio of the given duration cannot be recorded.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'record-and-verify',
+                help='Record and match audio against stored sample',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('duration', nargs='?', type=int, default=20,
+                            help='Record duration [secs]')
+        parser.set_defaults(handler=self)
+
+    def __call__(self, server, args):
+        sox_cmd = (('sox -q -t pulseaudio btts_null.monitor %s ' +
+                    'silence 1 0.50 0.1%% trim 0 %d')
+                   % (MATCHED_PATH, args.duration)).split()
+        sox = subprocess.Popen(sox_cmd)
+        try:
+            sox.wait(timeout=args.duration + REASONABLE_RECORD_WAIT_TIME)
+        except subprocess.TimeoutExpired:
+            sox.terminate()
+
+        try:
+            sox.wait(timeout=REASONABLE_TERMINATE_TIME)
+        except subprocess.TimeoutExpired:
+            sox.kill()
+            raise btts.cliutils.Failure('SoX refused to terminate')
+
+        with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
+            sample_code = sample_code_file.read()
+
+        duration, code = btts.echonest.codegen(MATCHED_PATH)
+
+        if duration < args.duration:
+            raise btts.cliutils.Failure(('The duration of the recorded '
+                                         'audio (%dsecs) is shorter than '
+                                         'expected (%dsecs)')
+                                        % (duration, args.duration))
+
+        ok = btts.echonest.match_code_string(wanted=sample_code,
+                                             tested=code)
+        print(['false', 'true'][ok])
+
+class CommandVerify:
+    '''\
+    Match audio against the stored sample.
+
+    The audio data is read from stdin.
+
+    Prints "true" or "false" to indicate the result.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'verify',
+                help='Match audio against stored sample',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    def __call__(self, server, args):
+        with open(MATCHED_PATH, 'wb') as matched_file:
+            os.sendfile(matched_file.fileno(), sys.stdin.buffer.fileno(),
+                        None, SAMPLE_MAX_SIZE)
+
+        with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
+            sample_code = sample_code_file.read()
+
+        code = btts.echonest.codegen(MATCHED_PATH)[1]
+
+        ok = btts.echonest.match_code_string(wanted=sample_code,
+                                             tested=code)
+        print(['false', 'true'][ok])
 
 # Main argument parser
 main_parser = argparse.ArgumentParser(
@@ -63,13 +336,41 @@ subparsers = main_parser.add_subparsers(
             on the given subcommand.''')
 
 CommandEnabled(subparsers)
+CommandSetSample(subparsers)
+CommandAsyncRecordAndVerify(subparsers)
+CommandAsyncRecordAndVerifyWait(subparsers)
+CommandRecordAndVerify(subparsers)
+CommandVerify(subparsers)
 
-args = main_parser.parse_args()
-if not args.subcommand:
-    main_parser.print_usage()
-    sys.exit(1)
+main_parser.usage = '%(prog)s --server\n' + main_parser.format_usage()
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+bus = dbus.SystemBus()
 
-with error_handler(main_parser):
-    args.handler(args)
+if '--server' in sys.argv:
+    if len(sys.argv) > 2:
+        main_parser.error('Unexpected argument')
+
+    mainloop = GObject.MainLoop()
+
+    name = dbus.service.BusName(SERVER_BUS_NAME, bus)
+    server = Server(bus, SERVER_PATH)
+
+    # TODO: signal handling
+    #signal.signal(signal.SIGINT,
+    #		lambda *args: gobject.idle_add(mainloop.quit))
+    #signal.signal(signal.SIGTERM,
+    #		lambda *args: gobject.idle_add(mainloop.quit))
+
+    mainloop.run()
+else:
+    args = main_parser.parse_args()
+    if not args.subcommand:
+        main_parser.print_usage()
+        sys.exit(1)
+
+    server_object = bus.get_object(SERVER_BUS_NAME, SERVER_PATH)
+    server = dbus.Interface(server_object, SERVER_INTERFACE)
+
+    with error_handler(main_parser):
+        args.handler(server, args)

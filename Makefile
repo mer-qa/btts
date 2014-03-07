@@ -48,6 +48,7 @@ install:
 	$(INSTALL_PYTHON_MOD) lib/python/btts/cliutils.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/device.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/devicemanager.py
+	$(INSTALL_PYTHON_MOD) lib/python/btts/echonest.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/profilemanager.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/utils.py
 
@@ -60,6 +61,7 @@ install:
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-pulseaudio.service
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-bluez-agent.service
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-bluez-pairing-tool.service
+	$(INSTALL_SYSTEMD_UNIT) systemd/btts-a2dp-tool.service
 
 	$(INSTALL_DIR) $(TMPFILES_D_DIR)
 	$(INSTALL_TMPFILES_D_CONFIG) systemd/tmpfiles.d/btts.conf

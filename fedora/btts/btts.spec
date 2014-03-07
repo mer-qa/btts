@@ -18,6 +18,7 @@ Requires:	pulseaudio-utils
 Requires:	python3
 Requires:	python3-dbus
 Requires:	python3-gobject
+Requires:	sox
 BuildRequires:	python2-devel
 Requires(pre): shadow-utils
 
@@ -70,6 +71,7 @@ make install DESTDIR=%{buildroot}
 %{_datadir}/glib-2.0/schemas/*
 %{_unitdir}/btts-bluez-agent.service
 %{_unitdir}/btts-bluez-pairing-tool.service
+%{_unitdir}/btts-a2dp-tool.service
 %{_unitdir}/btts-dbus.service
 %{_unitdir}/btts-pulseaudio.service
 %{_unitdir}/btts.target
