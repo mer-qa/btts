@@ -19,6 +19,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 from   contextlib import ContextDecorator
+import dbus
 import sys
 
 class Failure(Exception):
@@ -26,6 +27,16 @@ class Failure(Exception):
 
 class BadUsage(Exception):
     pass
+
+def _match_exc(matched_exc, wanted_exc_type):
+    if isinstance(matched_exc, wanted_exc_type):
+        return True
+    if isinstance(matched_exc, dbus.DBusException):
+        wanted_dbus_error_name = getattr(wanted_exc_type, '_dbus_error_name', None)
+        if wanted_dbus_error_name is not None:
+            if matched_exc.get_dbus_name() == wanted_dbus_error_name:
+                return True
+    return False
 
 class failure_on(ContextDecorator):
     def __init__(self, exc_types):
@@ -36,7 +47,7 @@ class failure_on(ContextDecorator):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type and any(map(lambda t: issubclass(exc_type, t), self.exc_types)):
+        if exc_type and any(map(lambda t: _match_exc(exc_value, t), self.exc_types)):
             raise Failure(str(exc_value)).with_traceback(traceback)
         return False
 
@@ -49,7 +60,7 @@ class bad_usage_on(ContextDecorator):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type and any(map(lambda t: issubclass(exc_type, t), self.exc_types)):
+        if exc_type and any(map(lambda t: _match_exc(exc_value, t), self.exc_types)):
             raise BadUsage(str(exc_value)).with_traceback(traceback)
         return False
 
