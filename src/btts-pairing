@@ -19,21 +19,20 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from gi.repository import GObject
-
-import sys
-import signal
 import argparse
 import dbus
-import dbus.service
 import dbus.mainloop.glib
+import dbus.service
+from   gi.repository import GObject
+import signal
+import sys
 import warnings
 
 # From bluez's tests
 import bluezutils
 
 import btts
-from btts.utils import dbus_service_method, dbus_service_signal
+from   btts.utils import dbus_service_method, dbus_service_signal
 
 TOOL_BUS_NAME = 'org.merproject.btts.BluezPairingTool'
 TOOL_PATH = '/org/merproject/btts/BluezPairingTool'
@@ -42,278 +41,278 @@ TOOL_INTERFACE = 'org.merproject.btts.BluezPairingTool'
 bus = None
 
 def set_trusted(path):
-	props = dbus.Interface(bus.get_object("org.bluez", path),
-			       "org.freedesktop.DBus.Properties")
-	props.Set("org.bluez.Device1", "Trusted", True)
+    props = dbus.Interface(bus.get_object("org.bluez", path),
+                           "org.freedesktop.DBus.Properties")
+    props.Set("org.bluez.Device1", "Trusted", True)
 
 def dev_connect(path):
-	dev = dbus.Interface(bus.get_object("org.bluez", path),
-			     "org.bluez.Device1")
-	dev.Connect()
+    dev = dbus.Interface(bus.get_object("org.bluez", path),
+                         "org.bluez.Device1")
+    dev.Connect()
 
 class PairingTool(dbus.service.Object):
-	class State:
-		Initial = "initial"
-		Pairing = "pairing"
-		Succeeded = "succeeded"
-		Failed = "failed"
-		Cancelling = "cancelling"
-		Cancelled = "cancelled"
-		CancelFailed = "cancel-failed"
-	_all_states = [State.Initial, State.Pairing, State.Succeeded,
-		       State.Failed, State.Cancelling, State.Cancelled,
-		       State.CancelFailed]
-	_error_states = [State.Failed, State.CancelFailed]
+    class State:
+        Initial = "initial"
+        Pairing = "pairing"
+        Succeeded = "succeeded"
+        Failed = "failed"
+        Cancelling = "cancelling"
+        Cancelled = "cancelled"
+        CancelFailed = "cancel-failed"
+    _all_states = [State.Initial, State.Pairing, State.Succeeded,
+                   State.Failed, State.Cancelling, State.Cancelled,
+                   State.CancelFailed]
+    _error_states = [State.Failed, State.CancelFailed]
 
-	def __init__(self, bus, path):
-		dbus.service.Object.__init__(self, bus, path)
-		self._state = self.State.Initial
-		self.error = None
+    def __init__(self, bus, path):
+        dbus.service.Object.__init__(self, bus, path)
+        self._state = self.State.Initial
+        self.error = None
 
-	@property
-	def state(self):
-		return self._state
+    @property
+    def state(self):
+        return self._state
 
-	@state.setter
-	def state(self, state):
-		# Error must be set before error state is set so the signal can
-		# be emited
-		assert state not in self._error_states or self.error != None
-		self._state = state
-		self.StateChanged(self._state, self.error or '')
+    @state.setter
+    def state(self, state):
+        # Error must be set before error state is set so the signal can
+        # be emited
+        assert state not in self._error_states or self.error != None
+        self._state = state
+        self.StateChanged(self._state, self.error or '')
 
-	#------------------------------------------------------------
-	@dbus_service_method(TOOL_INTERFACE,
-			     in_signature="s", out_signature="")
-	def Pair(self, hw_address):
-		self.Reset()
+    #------------------------------------------------------------
+    @dbus_service_method(TOOL_INTERFACE,
+                         in_signature="s", out_signature="")
+    def Pair(self, hw_address):
+        self.Reset()
 
-		adapter = btts.AdapterManager().get_adapter_no_alias()
-		self.device = bluezutils.find_device(hw_address.upper(), adapter)
-		self.device_path = self.device.object_path
+        adapter = btts.AdapterManager().get_adapter_no_alias()
+        self.device = bluezutils.find_device(hw_address.upper(), adapter)
+        self.device_path = self.device.object_path
 
-		self.device.Pair(reply_handler=self.pair_reply,
-				 error_handler=self.pair_error, timeout=60000)
-		self.state = self.State.Pairing
+        self.device.Pair(reply_handler=self.pair_reply,
+                 error_handler=self.pair_error, timeout=60000)
+        self.state = self.State.Pairing
 
-	def pair_reply(self):
-		assert self.state == self.State.Pairing
+    def pair_reply(self):
+        assert self.state == self.State.Pairing
 
-		self.state = self.State.Succeeded
+        self.state = self.State.Succeeded
 
-	def pair_error(self, error):
-		assert self.state == self.State.Pairing
+    def pair_error(self, error):
+        assert self.state == self.State.Pairing
 
-		self.error = error.get_dbus_name()
-		self.state = self.State.Failed
+        self.error = error.get_dbus_name()
+        self.state = self.State.Failed
 
-		if self.error == "org.freedesktop.DBus.Error.NoReply" and self.device:
-			print("Timed out. Cancelling pairing")
-			self.device.CancelPairing()
+        if self.error == "org.freedesktop.DBus.Error.NoReply" and self.device:
+            print("Timed out. Cancelling pairing")
+            self.device.CancelPairing()
 
-	#------------------------------------------------------------
-	@dbus_service_method(TOOL_INTERFACE,
-			     in_signature="", out_signature="")
-	def Cancel(self):
-		assert self.state == self.State.Pairing
+    #------------------------------------------------------------
+    @dbus_service_method(TOOL_INTERFACE,
+                         in_signature="", out_signature="")
+    def Cancel(self):
+        assert self.state == self.State.Pairing
 
-		self.device.CancelPairing(reply_handler=self.cancel_reply,
-					  error_handler=self.cancel_error,
-					  timeout=60000)
+        self.device.CancelPairing(reply_handler=self.cancel_reply,
+                                  error_handler=self.cancel_error,
+                                  timeout=60000)
 
-	def cancel_reply(self):
-		assert self.state == self.State.Cancelling
+    def cancel_reply(self):
+        assert self.state == self.State.Cancelling
 
-		self.state = self.State.Cancelled
+        self.state = self.State.Cancelled
 
-	def cancel_error(self, error):
-		assert self.state == self.State.Cancelling
+    def cancel_error(self, error):
+        assert self.state == self.State.Cancelling
 
-		self.error = error.get_dbus_name()
-		self.state = self.State.CancelFailed
+        self.error = error.get_dbus_name()
+        self.state = self.State.CancelFailed
 
-	#------------------------------------------------------------
-	@dbus_service_method(TOOL_INTERFACE,
-			     in_signature="", out_signature="s")
-	def GetState(self):
-		return self.state
+    #------------------------------------------------------------
+    @dbus_service_method(TOOL_INTERFACE,
+                         in_signature="", out_signature="s")
+    def GetState(self):
+        return self.state
 
-	@dbus_service_signal(TOOL_INTERFACE,
-			     signature="ss")
-	def StateChanged(self, state, error):
-		pass
+    @dbus_service_signal(TOOL_INTERFACE,
+                         signature="ss")
+    def StateChanged(self, state, error):
+        pass
 
-	#------------------------------------------------------------
-	@dbus_service_method(TOOL_INTERFACE,
-			     in_signature="", out_signature="s")
-	def GetError(self):
-		if self.error:
-			return self.error
-		else:
-			return "No error"
+    #------------------------------------------------------------
+    @dbus_service_method(TOOL_INTERFACE,
+                         in_signature="", out_signature="s")
+    def GetError(self):
+        if self.error:
+            return self.error
+        else:
+            return "No error"
 
-	#------------------------------------------------------------
-	@dbus_service_method(TOOL_INTERFACE,
-			     in_signature="", out_signature="")
-	def Reset(self):
-		self.state = self.State.Initial
-		self.error = None
-		self.device = None
-		self.device_path = None
+    #------------------------------------------------------------
+    @dbus_service_method(TOOL_INTERFACE,
+                         in_signature="", out_signature="")
+    def Reset(self):
+        self.state = self.State.Initial
+        self.error = None
+        self.device = None
+        self.device_path = None
 
 class CommandPair:
-	'''\
-	Initiate pairing.
+    '''\
+    Initiate pairing.
 
-	See org.bluez.Device1.Pair() in the bluez5 D-Bus API documentation.
-	'''
+    See org.bluez.Device1.Pair() in the bluez5 D-Bus API documentation.
+    '''
 
-	def __init__(self, subparsers):
-		parser = subparsers.add_parser(
-				'pair',
-				help='Initiate pairing',
-				formatter_class=argparse.RawDescriptionHelpFormatter,
-				description=self.__doc__)
-		parser.set_defaults(handler=self)
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'pair',
+                help='Initiate pairing',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
 
-	def __call__(self, tool, args):
-		tool.Pair(btts.DeviceManager().device_address)
+    def __call__(self, tool, args):
+        tool.Pair(btts.DeviceManager().device_address)
 
 class CommandCancel:
-	'''\
-	Cancel pairing.
+    '''\
+    Cancel pairing.
 
-	See org.bluez.Device1.CancelPairing() in the bluez5 D-Bus API documentation.
-	'''
+    See org.bluez.Device1.CancelPairing() in the bluez5 D-Bus API documentation.
+    '''
 
-	def __init__(self, subparsers):
-		parser = subparsers.add_parser(
-				'cancel',
-				help='Cancel pairing',
-				formatter_class=argparse.RawDescriptionHelpFormatter,
-				description=self.__doc__)
-		parser.set_defaults(handler=self)
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'cancel',
+                help='Cancel pairing',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
 
-	def __call__(self, tool, args):
-		tool.Cancel()
+    def __call__(self, tool, args):
+        tool.Cancel()
 
 class CommandState:
-	'''\
-	Get state.
+    '''\
+    Get state.
 
-	Possible states:
+    Possible states:
 
-		initial        tool is in its initial state
-		pairing        pairing operation in progress
-		succeeded      pairing successfully finished
-		failed         pairing failed
-		cancelling     cancel operation in progress
-		cancelled      cancel operation successfully finished
-		cancel-failed  cancel operation failed
-	'''
+        initial        tool is in its initial state
+        pairing        pairing operation in progress
+        succeeded      pairing successfully finished
+        failed         pairing failed
+        cancelling     cancel operation in progress
+        cancelled      cancel operation successfully finished
+        cancel-failed  cancel operation failed
+    '''
 
-	def __init__(self, subparsers):
-		parser = subparsers.add_parser(
-				'state',
-				help='Get state',
-				formatter_class=argparse.RawDescriptionHelpFormatter,
-				description=self.__doc__)
-		parser.set_defaults(handler=self)
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'state',
+                help='Get state',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
 
-	def __call__(self, tool, args):
-		print(tool.GetState())
+    def __call__(self, tool, args):
+        print(tool.GetState())
 
 class CommandExpectState:
-	'''\
-	Verify state change - waiting.
+    '''\
+    Verify state change - waiting.
 
-	Also see `state'
-	'''
+    Also see `state'
+    '''
 
-	def __init__(self, subparsers):
-		parser = subparsers.add_parser(
-				'expect-state',
-				help='Verify state change - waiting',
-				formatter_class=argparse.RawDescriptionHelpFormatter,
-				description=self.__doc__)
-		parser.add_argument('state', type=self.state,
-				    help='Expected state')
-		parser.add_argument('timeout', nargs='?', type=int, default=35,
-				    help='Timeout [secs]')
-		parser.set_defaults(handler=self)
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'expect-state',
+                help='Verify state change - waiting',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('state', type=self.state,
+                            help='Expected state')
+        parser.add_argument('timeout', nargs='?', type=int, default=35,
+                            help='Timeout [secs]')
+        parser.set_defaults(handler=self)
 
-	def __call__(self, tool, args):
-		current_state = tool.GetState()
-		if current_state == args.state:
-			print('true')
-                        return
+    def __call__(self, tool, args):
+        current_state = tool.GetState()
+        if current_state == args.state:
+            print('true')
+            return
 
-		current_state = [] # hack for missing 'nonlocal' keyword in python 2
-		loop = GObject.MainLoop()
-		def on_state_changed(state, error):
-			current_state.append(state)
-			loop.quit()
-		tool.connect_to_signal("StateChanged",
-				       on_state_changed)
-		GObject.timeout_add(args.timeout * 1000, loop.quit)
-		loop.run()
+        current_state = [] # hack for missing 'nonlocal' keyword in python 2
+        loop = GObject.MainLoop()
+        def on_state_changed(state, error):
+            current_state.append(state)
+            loop.quit()
+        tool.connect_to_signal("StateChanged",
+                               on_state_changed)
+        GObject.timeout_add(args.timeout * 1000, loop.quit)
+        loop.run()
 
-		if current_state == []:
-			warnings.warn("Timeout waiting for state change")
-		print(['false', 'true'][current_state == [args.state]])
+        if current_state == []:
+            warnings.warn("Timeout waiting for state change")
+        print(['false', 'true'][current_state == [args.state]])
 
-	@staticmethod
-	def state(string):
-		if not string in PairingTool._all_states:
-			raise TypeError
-		return string
+    @staticmethod
+    def state(string):
+        if not string in PairingTool._all_states:
+            raise TypeError
+        return string
 
 
 class CommandErrorName:
-	'''\
-	Get the last received D-Bus error name.
+    '''\
+    Get the last received D-Bus error name.
 
-	Until in "Failed" or "CancelFailed" state, it returns the string "No error"
-	'''
+    Until in "Failed" or "CancelFailed" state, it returns the string "No error"
+    '''
 
-	def __init__(self, subparsers):
-		parser = subparsers.add_parser(
-				'error-name',
-				help='Get the last received D-Bus error name',
-				formatter_class=argparse.RawDescriptionHelpFormatter,
-				description=self.__doc__)
-		parser.set_defaults(handler=self)
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'error-name',
+                help='Get the last received D-Bus error name',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
 
-	def __call__(self, tool, args):
-		print(tool.GetError())
+    def __call__(self, tool, args):
+        print(tool.GetError())
 
 
 class CommandReset:
-	'''\
-	Reset the tool to its initial state.
-	'''
+    '''\
+    Reset the tool to its initial state.
+    '''
 
-	def __init__(self, subparsers):
-		parser = subparsers.add_parser(
-				'reset',
-				help='Reset the tool to its initial state',
-				formatter_class=argparse.RawDescriptionHelpFormatter,
-				description=self.__doc__)
-		parser.set_defaults(handler=self)
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'reset',
+                help='Reset the tool to its initial state',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
 
-	def __call__(self, tool, args):
-		tool.Reset()
+    def __call__(self, tool, args):
+        tool.Reset()
 
 
 if __name__ == '__main__':
-	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
-	bus = dbus.SystemBus()
+    bus = dbus.SystemBus()
 
-	parser = argparse.ArgumentParser(
-			prog='btts pairing',
-			formatter_class=argparse.RawDescriptionHelpFormatter,
-			description='''\
+    parser = argparse.ArgumentParser(
+            prog='btts pairing',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            description='''\
 Bluez pairing tool with non-interactive command line user interface.
 
 It consists of a background service and a client process providing user
@@ -321,39 +320,39 @@ interface. Pass `--server' option to run the background service instead of user
 interface.
 
 ''')
-	subparsers = parser.add_subparsers(
-			dest='subcommand', title='subcommands',
-			help='''Valid subcommands. Pass "<subcommand> --help" to get
-				more help on the given subcommand.''')
+    subparsers = parser.add_subparsers(
+            dest='subcommand', title='subcommands',
+            help='''Valid subcommands. Pass "<subcommand> --help" to get
+                more help on the given subcommand.''')
 
-	CommandPair(subparsers)
-	CommandCancel(subparsers)
-	CommandState(subparsers)
-	CommandExpectState(subparsers)
-	CommandErrorName(subparsers)
-	CommandReset(subparsers)
+    CommandPair(subparsers)
+    CommandCancel(subparsers)
+    CommandState(subparsers)
+    CommandExpectState(subparsers)
+    CommandErrorName(subparsers)
+    CommandReset(subparsers)
 
-	parser.usage = '%(prog)s --server\n' + parser.format_usage()
+    parser.usage = '%(prog)s --server\n' + parser.format_usage()
 
-	if '--server' in sys.argv:
-		if len(sys.argv) > 2:
-			parser.error('Unexpected argument')
+    if '--server' in sys.argv:
+        if len(sys.argv) > 2:
+            parser.error('Unexpected argument')
 
-		mainloop = GObject.MainLoop()
+        mainloop = GObject.MainLoop()
 
-		name = dbus.service.BusName(TOOL_BUS_NAME, bus)
-		tool = PairingTool(bus, TOOL_PATH)
-		print("Pairing tool registered")
+        name = dbus.service.BusName(TOOL_BUS_NAME, bus)
+        tool = PairingTool(bus, TOOL_PATH)
+        print("Pairing tool registered")
 
-		# TODO: signal handling
-		#signal.signal(signal.SIGINT,
-		#		lambda *args: GObject.idle_add(mainloop.quit))
-		#signal.signal(signal.SIGTERM,
-		#		lambda *args: GObject.idle_add(mainloop.quit))
+        # TODO: signal handling
+        #signal.signal(signal.SIGINT,
+        #       lambda *args: GObject.idle_add(mainloop.quit))
+        #signal.signal(signal.SIGTERM,
+        #       lambda *args: GObject.idle_add(mainloop.quit))
 
-		mainloop.run()
-	else:
-		args = parser.parse_args()
-		tool_object = bus.get_object(TOOL_BUS_NAME, TOOL_PATH)
-		tool = dbus.Interface(tool_object, TOOL_INTERFACE)
-		args.handler(tool, args)
+        mainloop.run()
+    else:
+        args = parser.parse_args()
+        tool_object = bus.get_object(TOOL_BUS_NAME, TOOL_PATH)
+        tool = dbus.Interface(tool_object, TOOL_INTERFACE)
+        args.handler(tool, args)
