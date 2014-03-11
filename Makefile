@@ -26,6 +26,9 @@ INSTALL_GSCHEMA      = install --target-directory="$(GSCHEMA_DIR)" -m 0664
 
 all:
 
+pycheck:
+	python3 -m py_compile src/btts-* lib/python/btts/*.py
+
 install:
 	$(INSTALL_DIR) $(BIN_DIR)
 	$(INSTALL_BIN_PROG) src/btts
