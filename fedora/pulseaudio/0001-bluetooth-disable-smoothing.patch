@@ -1,0 +1,25 @@
+From 4c5300db0f538910e7b1350f97c633daa93406ff Mon Sep 17 00:00:00 2001
+From: Martin Kampas <martin.kampas@tieto.com>
+Date: Thu, 13 Mar 2014 10:46:37 +0100
+Subject: [PATCH] bluetooth: disable smoothing
+
+---
+ src/modules/bluetooth/module-bluez5-device.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
+index df08d62..0acce74 100644
+--- a/src/modules/bluetooth/module-bluez5-device.c
++++ b/src/modules/bluetooth/module-bluez5-device.c
+@@ -659,7 +659,7 @@ static void setup_stream(struct userdata *u) {
+     u->started_at = 0;
+ 
+     if (u->source)
+-        u->read_smoother = pa_smoother_new(PA_USEC_PER_SEC, 2*PA_USEC_PER_SEC, true, true, 10, pa_rtclock_now(), true);
++        u->read_smoother = pa_smoother_new(PA_USEC_PER_SEC, 2*PA_USEC_PER_SEC, true, false, 10, pa_rtclock_now(), true);
+ }
+ 
+ /* Run from IO thread */
+-- 
+1.8.4.2
+

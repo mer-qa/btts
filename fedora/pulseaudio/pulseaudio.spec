@@ -12,7 +12,7 @@
 Name:           pulseaudio
 Summary:        Improved Linux Sound Server
 Version:        %{pa_major}%{?pa_minor:.%{pa_minor}}
-Release:        9%{?gitcommit:.git%{shortcommit}}%{?dist}
+Release:        9%{?gitcommit:.git%{shortcommit}}%{?dist}.btts1
 License:        LGPLv2+
 URL:            http://www.freedesktop.org/wiki/Software/PulseAudio
 %if 0%{?gitrel}
@@ -29,6 +29,7 @@ Source1:        default.pa-for-gdm
 Patch1: pulseaudio-x11_device_manager.patch
 # set X-KDE-autostart-phase=1
 Patch2: pulseaudio-4.0-kde_autostart_phase.patch
+Patch3: 0001-bluetooth-disable-smoothing.patch
 
 ## upstream patches
 
@@ -209,6 +210,7 @@ This package contains GDM integration hooks for the PulseAudio sound server.
 
 %patch1 -p1 -b .x11_device_manager
 %patch2 -p1 -b .kde_autostart_phase
+%patch3 -p1 -b .disable_smoothing
 
 sed -i.no_consolekit -e \
   's/^load-module module-console-kit/#load-module module-console-kit/' \
