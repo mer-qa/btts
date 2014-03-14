@@ -9,7 +9,17 @@ then
 	sudo rpm -e --nodeps ${installed}
 fi
 
-if available="$(repoquery --disablerepo='*' --enablerepo='btts-local' --all |grep .)"
+filter=(
+	"bluez*"
+	"pulseaudio"
+	"pulseaudio-module-bluetooth"
+	"pulseaudio-utils"
+	"ofono*"
+	"echoprint-codegen*"
+	"btts*"
+)
+
+if available="$(repoquery --disablerepo='*' --enablerepo='btts-local' "${filter[@]}" |grep .)"
 then
 	sudo yum --nogpgcheck install ${available}
 fi
