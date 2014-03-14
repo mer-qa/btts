@@ -43,27 +43,27 @@ SERVER_PATH = '/org/merproject/btts/A2dpTool'
 SERVER_INTERFACE = 'org.merproject.btts.A2dpTool'
 SERVER_ERROR_NAME = 'org.merproject.btts.A2dpTool.Error'
 
-class Server(dbus.service.Object):
+class Recorder:
     class Error(Exception):
         _dbus_error_name = SERVER_ERROR_NAME
 
     class NotReadyError(Error):
         def __init__(self):
-            Server.Error.__init__(self, 'Not ready')
+            Recorder.Error.__init__(self, 'Not ready')
 
     class NotStartedError(Error):
         def __init__(self):
-            Server.Error.__init__(self, 'Operation not started')
+            Recorder.Error.__init__(self, 'Operation not started')
 
     class RecordTooShortError(Error):
         def __init__(self, actual_duration, expected_duration):
-            Server.Error.__init__(self, ('The duration of the recorded '
-                                         'audio (%dsecs) is shorter than '
-                                         'expected (%dsecs)')
-                                        % (actual_duration, expected_duration))
+            Recorder.Error.__init__(self, ('The duration of the recorded '
+                                           'audio (%dsecs) is shorter than '
+                                           'expected (%dsecs)')
+                                          % (actual_duration, expected_duration))
 
-    def __init__(self, bus, path):
-        dbus.service.Object.__init__(self, bus, path)
+    def __init__(self):
+        self._parec = None
         self._sox = None
 
     def _ensure_ready(self):
@@ -72,9 +72,7 @@ class Server(dbus.service.Object):
         if not ready:
             raise self.NotReadyError()
 
-    @dbus_service_method(SERVER_INTERFACE,
-                         in_signature="i", out_signature="")
-    def StartRecord(self, duration):
+    def start(self, duration):
         self._ensure_ready()
 
         if self._sox != None:
@@ -82,33 +80,49 @@ class Server(dbus.service.Object):
             self._sox.terminate()
             try:
                 self._sox.wait(timeout=REASONABLE_TERMINATE_TIME)
+                self._parec.wait(timeout=REASONABLE_TERMINATE_TIME)
             except subprocess.TimeoutExpired:
-                warnings.warn('SoX refused to terminate. Will be killed.')
+                warnings.warn('Recording pipeline refused to terminate. Will be killed.')
                 self._sox.kill()
+                self._parec.kill()
+            finally:
+                self._sox = None
+                self._parec = None
 
-        sox_cmd = (('sox -q -t pulseaudio btts_null.monitor %s ' +
-                    'silence 1 0.50 0.1%% trim 0 %d')
+        device_manager = btts.DeviceManager()
+        device_address = device_manager.device_address.upper().replace(':', '_')
+
+        # Notes:
+        # 1. Not using `sox -t pulseaudio <pa_dev>` as SoX uses pa_simple which
+        # connects streams with PA_STREAM_INTERPOLATE_TIMING.
+        # 2. Regarding the use of the 'AU' format see
+        # http://www.mega-nerd.com/libsndfile/FAQ.html#Q017
+        parec_cmd = ('parec --device bluez_source.%s --file-format=au'
+                     % (device_address)).split()
+        sox_cmd = ('sox -q -t au - %s silence 1 0.5 0.1%% trim 0 %d'
                    % (MATCHED_PATH, duration)).split()
-        self._sox = subprocess.Popen(sox_cmd)
-        self._sox_start_time = time.monotonic()
-        self._record_duration = duration
 
-    @dbus_service_method(SERVER_INTERFACE,
-                         in_signature="", out_signature="is")
-    def WaitRecord(self):
+        self._parec = subprocess.Popen(parec_cmd, stdout=subprocess.PIPE)
+        self._sox = subprocess.Popen(sox_cmd, stdin=self._parec.stdout)
+        self._parec.stdout.close()
+
+        self._start_time = time.monotonic()
+        self._duration = duration
+
+    def wait(self):
         self._ensure_ready()
 
         if self._sox == None:
             raise self.NotStartedError()
 
-        total_wait_time = self._record_duration + REASONABLE_RECORD_WAIT_TIME
-        elapsed_wait_time = time.monotonic() - self._sox_start_time
+        total_wait_time = self._duration + REASONABLE_RECORD_WAIT_TIME
+        elapsed_wait_time = time.monotonic() - self._start_time
         remaining = total_wait_time - elapsed_wait_time
 
         if remaining < 0:
             warnings.warn(('Called too late - have been recording for longer '
                            '(%dsecs) than the required duration (%dsecs).')
-                          % (elapsed_wait_time, self._record_duration))
+                          % (elapsed_wait_time, self._duration))
             remaining = 0
 
         try:
@@ -118,18 +132,37 @@ class Server(dbus.service.Object):
 
         try:
             self._sox.wait(timeout=REASONABLE_TERMINATE_TIME)
+            self._parec.wait(timeout=REASONABLE_TERMINATE_TIME)
         except subprocess.TimeoutExpired:
             self._sox.kill()
-            raise btts.cliutils.Failure('SoX refused to terminate')
+            self._parec.kill()
+            raise btts.cliutils.Failure('Recording pipeline refused to terminate')
         finally:
             self._sox = None
+            self._parec = None
 
         duration, code = btts.echonest.codegen(MATCHED_PATH)
 
-        if duration < self._record_duration:
-            raise self.RecordTooShortError(duration, self._record_duration)
+        if duration < self._duration:
+            raise self.RecordTooShortError(duration, self._duration)
 
         return (duration, code)
+
+
+class Server(dbus.service.Object):
+    def __init__(self, bus, path):
+        dbus.service.Object.__init__(self, bus, path)
+        self._recorder = Recorder()
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature="i", out_signature="")
+    def StartRecord(self, duration):
+        self._recorder.start(duration)
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature="", out_signature="is")
+    def WaitRecord(self):
+        return self._recorder.wait()
 
 class CommandEnabled:
     '''\
@@ -203,7 +236,7 @@ class CommandAsyncRecordAndVerify:
                             help='Record duration [secs]')
         parser.set_defaults(handler=self)
 
-    @failure_on([Server.Error])
+    @failure_on([Recorder.Error])
     def __call__(self, server, args):
         server.StartRecord(args.duration)
 
@@ -229,9 +262,9 @@ class CommandAsyncRecordAndVerifyWait:
                 description=self.__doc__)
         parser.set_defaults(handler=self)
 
-    @failure_on([Server.Error])
+    @failure_on([Recorder.Error])
     def __call__(self, server, args):
-        (duration, code) = server.WaitRecord()
+        duration, code = server.WaitRecord()
 
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
             sample_code = sample_code_file.read()
@@ -264,32 +297,16 @@ class CommandRecordAndVerify:
                             help='Record duration [secs]')
         parser.set_defaults(handler=self)
 
+    @failure_on([Recorder.Error])
     def __call__(self, server, args):
-        sox_cmd = (('sox -q -t pulseaudio btts_null.monitor %s ' +
-                    'silence 1 0.50 0.1%% trim 0 %d')
-                   % (MATCHED_PATH, args.duration)).split()
-        sox = subprocess.Popen(sox_cmd)
-        try:
-            sox.wait(timeout=args.duration + REASONABLE_RECORD_WAIT_TIME)
-        except subprocess.TimeoutExpired:
-            sox.terminate()
-
-        try:
-            sox.wait(timeout=REASONABLE_TERMINATE_TIME)
-        except subprocess.TimeoutExpired:
-            sox.kill()
-            raise btts.cliutils.Failure('SoX refused to terminate')
+        recorder = Recorder()
+        recorder.start(args.duration)
+        duration, code = recorder.wait()
 
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
             sample_code = sample_code_file.read()
 
         duration, code = btts.echonest.codegen(MATCHED_PATH)
-
-        if duration < args.duration:
-            raise btts.cliutils.Failure(('The duration of the recorded '
-                                         'audio (%dsecs) is shorter than '
-                                         'expected (%dsecs)')
-                                        % (duration, args.duration))
 
         ok = btts.echonest.match_code_string(wanted=sample_code,
                                              tested=code)
