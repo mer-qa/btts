@@ -20,8 +20,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from functools import wraps
 import dbus.service
+import logging
 import sys
-from traceback import print_exception
+
+log = logging.getLogger(__name__)
 
 def dbus_service_method(dbus_interface, **kwargs):
 	def ctor(func):
@@ -29,14 +31,12 @@ def dbus_service_method(dbus_interface, **kwargs):
 		@wraps(func)
 		def logger(*args, **kwargs):
 			try:
-				print("CALL %s.%s(\n\t%s)" % (dbus_interface,
+				log.debug("CALL %s.%s(\n\t%s)" % (dbus_interface,
 							func.__name__,
 							",\n\t".join(map(str, args))))
 				return dbus_wrapped(*args, **kwargs)
 			except Exception as e:
-				exc_type, exc_value, exc_traceback = sys.exc_info()
-				print_exception(exc_type, exc_value, exc_traceback)
-				print("Exception raised upon D-Bus call", file=sys.stderr)
+				log.exception("Exception raised upon D-Bus call")
 				raise e
 		return logger
 
@@ -48,15 +48,13 @@ def dbus_service_signal(dbus_interface, **kwargs):
 		@wraps(func)
 		def logger(*args, **kwargs):
 			try:
-				print("EMIT %s.%s(\n\t%s)" % (dbus_interface,
+				log.debug("EMIT %s.%s(\n\t%s)" % (dbus_interface,
 							func.__name__,
 							",\n\t".join(map(str, args))))
 				return dbus_wrapped(*args, **kwargs)
 			except Exception as e:
 				exc_type, exc_value, exc_traceback = sys.exc_info()
-				print_exception(exc_type, exc_value, exc_traceback)
-				print("Exception raised upon D-Bus signal emission",
-						file=sys.stderr)
+				log.exception("Exception raised upon D-Bus signal emission")
 				raise e
 		return logger
 

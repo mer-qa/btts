@@ -21,14 +21,16 @@ import argparse
 import dbus
 import dbus.mainloop.glib
 from   gi.repository import GObject
+import logging
 import sys
-import warnings
 
 # From bluez's tests
 import bluezutils
 
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
+
+log = logging.getLogger(__name__)
 
 class CommandExpectAvailable:
     '''\
@@ -169,7 +171,7 @@ class CommandRemove:
         try:
             device.remove()
         except btts.Device.DeviceNotAvailableError:
-            warnings.warn('Device already removed. Nothing to do.')
+            log.warning('Device already removed. Nothing to do.')
             return
 
         loop = GObject.MainLoop()

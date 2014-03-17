@@ -20,11 +20,14 @@ from gi.repository import Gio
 import copy
 import dbus
 import glob
+import logging
 import os
 import re
 import warnings
 
 from btts.adapter import Adapter
+
+log = logging.getLogger(__name__)
 
 _ADAPTERS_FILE = "/etc/btts/adapters"
 _GSETTINGS_SCHEMA = "org.merproject.btts"
@@ -55,8 +58,8 @@ class AdapterManager:
 
         for alias, address in copy.deepcopy(self._address_by_alias).items():
             if address not in self._address_by_name.values():
-                warnings.warn("Invalid record in %s: %s: No such adapter" %
-                              (_ADAPTERS_FILE, address))
+                log.warning("Invalid record in %s: %s: No such adapter" %
+                            (_ADAPTERS_FILE, address))
                 del self._address_by_alias[alias]
 
     def get_adapter_no_alias(self):
@@ -64,7 +67,7 @@ class AdapterManager:
         if not name:
             raise self.AdapterNotSetError()
         if not name in self._address_by_name:
-            warnings.warn("%s: Stale setting. No such adapter." % (name))
+            log.warning("%s: Stale setting. No such adapter." % (name))
             raise self.AdapterNotSetError()
         return name
 

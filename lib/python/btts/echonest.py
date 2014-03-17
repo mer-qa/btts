@@ -19,9 +19,12 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import json
+import logging
 import math
 import subprocess
 import sys
+
+log = logging.getLogger(__name__)
 
 _MIN_CODE_LEN = 10
 _THRESHOLD = 0.5 # Percent match required
@@ -36,10 +39,9 @@ def match_code_string(wanted, tested):
     match = list(filter(lambda x: x in wanted_keys, tested_keys))
     match_len = len(match)
     total_len = len(tested_keys)
-    print('Matched %d%% samples (%d out of %d). Threshold %d%%.'
-          % ((match_len / total_len) * 100, match_len, total_len,
-              _THRESHOLD * 100),
-          file=sys.stderr)
+    log.info('Matched %d%% samples (%d out of %d). Threshold %d%%.'
+             % ((match_len / total_len) * 100, match_len, total_len,
+                 _THRESHOLD * 100))
     return match_len >= total_len * _THRESHOLD
 
 def codegen(file_path):
@@ -48,7 +50,7 @@ def codegen(file_path):
     proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL,
                             stdout=subprocess.PIPE, env=env)
     out = proc.communicate()[0]
-    #print('json: [[[%s]]]' % (out.decode('utf-8')), file=sys.stderr)
+    #log.debug('json: [[[%s]]]' % (out.decode('utf-8')), file=sys.stderr)
     data = json.loads(out.decode('utf-8'))
     code = data[0]['code']
 
