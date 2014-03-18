@@ -2,7 +2,7 @@
 
 Summary: Bluetooth utilities
 Name: bluez
-Version: 5.13
+Version: 5.16
 Release: 1%{?dist}
 License: GPLv2+
 Group: Applications/System
@@ -186,6 +186,7 @@ mkdir -p $RPM_BUILD_ROOT/%{_libdir}/bluetooth/
 %{_bindir}/sdptool
 %{_bindir}/bccmd
 %{_bindir}/bluetoothctl
+%{_bindir}/bluemoon
 %{_bindir}/btmon
 %{_bindir}/hciattach
 %{_bindir}/hciconfig
@@ -233,6 +234,12 @@ mkdir -p $RPM_BUILD_ROOT/%{_libdir}/bluetooth/
 /lib/udev/rules.d/97-hid2hci.rules
 
 %changelog
+* Thu Mar 13 2014 Bastien Nocera <bnocera@redhat.com> 5.16-1
+- Update to 5.16
+
+* Wed Jan 29 2014 Bastien Nocera <bnocera@redhat.com> 5.14-1
+- Update to 5.14
+
 * Mon Jan 06 2014 Bastien Nocera <bnocera@redhat.com> 5.13-1
 - Update to 5.13
 - Enable sixaxis plugin by default
