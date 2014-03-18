@@ -1,18 +1,21 @@
-%global pa_major   4.0
+%global pa_major   5.0
 #global pa_minor   0
 
-%global gitrel     266
-%global gitcommit  f81e3e1d7852c05b4b737ac7dac4db95798f0117
-%global shortcommit %(c=%{gitcommit}; echo ${c:0:5})
+#global gitrel     266
+#global gitcommit  f81e3e1d7852c05b4b737ac7dac4db95798f0117
+#global shortcommit %(c=%{gitcommit}; echo ${c:0:5})
 
 %ifarch %{ix86} x86_64 %{arm}
 %global with_webrtc 1
 %endif
 
+# https://bugzilla.redhat.com/983606
+%global _hardened_build 1
+
 Name:           pulseaudio
 Summary:        Improved Linux Sound Server
 Version:        %{pa_major}%{?pa_minor:.%{pa_minor}}
-Release:        9%{?gitcommit:.git%{shortcommit}}%{?dist}
+Release:        2%{?gitcommit:.git%{shortcommit}}%{?dist}
 License:        LGPLv2+
 URL:            http://www.freedesktop.org/wiki/Software/PulseAudio
 %if 0%{?gitrel}
@@ -46,9 +49,9 @@ BuildRequires:  glib2-devel
 BuildRequires:  gtk2-devel
 BuildRequires:  GConf2-devel
 BuildRequires:  avahi-devel
-%if 0%{?rhel} == 0
-BuildRequires:  lirc-devel
-BuildRequires:  jack-audio-connection-kit-devel
+%if 0%{?fedora}
+%global enable_lirc 1
+%global enable_jack 1
 %endif
 BuildRequires:  libatomic_ops-static, libatomic_ops-devel
 %ifnarch s390 s390x
@@ -79,6 +82,7 @@ BuildRequires:  systemd-devel >= 184
 BuildRequires:  json-c-devel
 BuildRequires:  dbus-devel
 BuildRequires:  libcap-devel
+BuildRequires:  pkgconfig(fftw3f)
 %if 0%{?with_webrtc}
 BuildRequires:  webrtc-audio-processing-devel
 %endif
@@ -87,15 +91,23 @@ BuildRequires:  pkgconfig(check)
 
 # retired along with -libs-zeroconf, add Obsoletes here for lack of anything better
 Obsoletes:      padevchooser < 1.0
+Requires(pre):  shadow-utils
 Requires:       %{name}-libs%{?_isa} = %{version}-%{release}
 Requires:       systemd >= 184
 Requires:       rtkit
-Requires:       kernel >= 2.6.30
 
 %description
 PulseAudio is a sound server for Linux and other Unix like operating
 systems. It is intended to be an improved drop-in replacement for the
 Enlightened Sound Daemon (ESOUND).
+
+%package qpaeq
+Summary:	Pulseaudio equalizer interface
+Requires: 	%{name}%{?_isa} = %{version}-%{release}
+Requires:	PyQt4
+Requires:	dbus-python
+%description qpaeq
+qpaeq is a equalizer interface for pulseaudio's equalizer sinks.
 
 %package esound-compat
 Summary:        PulseAudio EsounD daemon compatibility script
@@ -104,11 +116,11 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 A compatibility script that allows applications to call /usr/bin/esd
 and start PulseAudio with EsounD protocol modules.
 
-%if 0%{?rhel} == 0
+%if 0%{?enable_lirc}
 %package module-lirc
 Summary:        LIRC support for the PulseAudio sound server
+BuildRequires:  lirc-devel
 Requires:       %{name}%{?_isa} = %{version}-%{release}
-
 %description module-lirc
 LIRC volume control module for the PulseAudio sound server.
 %endif
@@ -131,17 +143,17 @@ Zeroconf publishing module for the PulseAudio sound server.
 
 %package module-bluetooth
 Summary:        Bluetooth support for the PulseAudio sound server
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 Requires:       bluez%{?bluez5: >= 5.0}
 
 %description module-bluetooth
 Contains Bluetooth audio (A2DP/HSP/HFP) support for the PulseAudio sound server.
 
-%if 0%{?rhel} == 0
+%if 0%{?enable_jack}
 %package module-jack
 Summary:        JACK support for the PulseAudio sound server
+BuildRequires:  jack-audio-connection-kit-devel
 Requires:       %{name}%{?_isa} = %{version}-%{release}
-
 %description module-jack
 JACK sink and source modules for the PulseAudio sound server.
 %endif
@@ -176,10 +188,6 @@ Summary:        Headers and libraries for PulseAudio client development
 License:        LGPLv2+
 Requires:       %{name}-libs%{?_isa} = %{version}-%{release}
 Requires:       %{name}-libs-glib2%{?_isa} = %{version}-%{release}
-%if 0%{?rhel} == 0
-Requires:       vala
-%endif
-
 %description libs-devel
 Headers and libraries for developing applications that can communicate with
 a PulseAudio sound server.
@@ -233,7 +241,8 @@ sed -i -e 's|"/lib /usr/lib|"/%{_lib} %{_libdir}|' configure
   --with-system-group=pulse \
   --with-access-group=pulse-access \
   --disable-oss-output \
-  --without-fftw \
+  %{?enable_jack:--enable-jack}%{!?enable_jack:--disable-jack} \
+  %{?enable_lirc:--enable-lirc}%{!?enable_lirc:--disable-lirc} \
   %{?bluez4:--enable-bluez4}%{!?bluez4:--disable-bluez4} \
   %{?bluez5:--enable-bluez5}%{!?bluez5:--disable-bluez5} \
 %ifarch %{arm}
@@ -246,7 +255,6 @@ sed -i -e 's|"/lib /usr/lib|"/%{_lib} %{_libdir}|' configure
   --enable-tests
 
 # we really should preopen here --preopen-mods=module-udev-detect.la, --force-preopen
-
 make %{?_smp_mflags} V=1
 make doxygen
 
@@ -257,35 +265,39 @@ make install DESTDIR=$RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib/udev/rules.d
 mv -fv $RPM_BUILD_ROOT/lib/udev/rules.d/90-pulseaudio.rules $RPM_BUILD_ROOT%{_prefix}/lib/udev/rules.d
 
-rm -fv $RPM_BUILD_ROOT%{_libdir}/*.la $RPM_BUILD_ROOT%{_libdir}/pulse-%{pa_major}/modules/*.la
-#rm -fv $RPM_BUILD_ROOT%{_libdir}/pulse-%{pa_major}/modules/liboss-util.so
-#rm -fv $RPM_BUILD_ROOT%{_libdir}/pulse-%{pa_major}/modules/module-oss.so
-rm -fv $RPM_BUILD_ROOT%{_libdir}/pulse-%{pa_major}/modules/module-detect.so
-
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib/pulse
 install -p -m644 -D %{SOURCE1} $RPM_BUILD_ROOT%{_localstatedir}/lib/gdm/.pulse/default.pa
 
+## unpackaged files
+# extraneous libtool crud
+rm -fv $RPM_BUILD_ROOT%{_libdir}/*.la $RPM_BUILD_ROOT%{_libdir}/pulse-%{pa_major}/modules/*.la
+# PA_MODULE_DEPRECATED("Please use module-udev-detect instead of module-detect!");
+rm -fv $RPM_BUILD_ROOT%{_libdir}/pulse-%{pa_major}/modules/module-detect.so
 # x11_device_manager folds -kde functionality into single -x11 autostart, so this
 # one is no longer needed
 rm -fv $RPM_BUILD_ROOT%{_sysconfdir}/xdg/autostart/pulseaudio-kde.desktop
 
-
 %find_lang %{name}
 
+
 %check
-# currently 1 failure in rpmbuild/mock: FAIL: mainloop-test
-#Running suite(s): MainLoop
-#DEFER EVENT
-#Assertion 'read(fd, &c, sizeof(c)) >= 0' failed at tests/mainloop-test.c:51, function iocb(). Aborting.
-#0%: Checks: 1, Failures: 0, Errors: 1
-#tests/mainloop-test.c:102:E:mainloop:mainloop_test:0: (after this point) Received signal 6 (Aborted)
-make check ||:
+# Remove ifnarch when rhbz 1067470 is fixed:
+%ifnarch ppc %{power64}
+make check
+%endif
+
 
 %pre
-/usr/sbin/groupadd -f -r pulse || :
-/usr/bin/id pulse >/dev/null 2>&1 || \
-            /usr/sbin/useradd -r -c 'PulseAudio System Daemon' -s /sbin/nologin -d /var/run/pulse -g pulse pulse || :
-/usr/sbin/groupadd -f -r pulse-access || :
+getent group pulse-access >/dev/null || groupadd -r pulse-access
+getent group pulse-access >/dev/null || groupadd -r pulse-rt
+getent group pulse >/dev/null || groupadd -f -g 171 -r pulse
+if ! getent passwd pulse >/dev/null ; then
+    if ! getent passwd 171 >/dev/null ; then
+      useradd -r -u 171 -g pulse -d /var/run/pulse -s /sbin/nologin -c "PulseAudio System Daemon" pulse
+    else
+      useradd -r -g pulse -d /var/run/pulse -s /sbin/nologin -c "PulseAudio System Daemon" pulse
+    fi
+fi
 exit 0
 
 %post -p /sbin/ldconfig
@@ -298,19 +310,13 @@ exit 0
  %{_sysconfdir}/pulse/default.pa
 ) ||:
 
-%post libs -p /sbin/ldconfig
-%postun libs -p /sbin/ldconfig
-
-%post libs-glib2 -p /sbin/ldconfig
-%postun libs-glib2 -p /sbin/ldconfig
-
 %files
 %doc README LICENSE GPL LGPL
 %dir %{_sysconfdir}/pulse/
 %config(noreplace) %{_sysconfdir}/pulse/daemon.conf
 %config(noreplace) %{_sysconfdir}/pulse/default.pa
 %config(noreplace) %{_sysconfdir}/pulse/system.pa
-%config(noreplace) %{_sysconfdir}/dbus-1/system.d/pulseaudio-system.conf
+%{_sysconfdir}/dbus-1/system.d/pulseaudio-system.conf
 %dir %{_sysconfdir}/bash_completion.d/
 %{_sysconfdir}/bash_completion.d/pulseaudio-bash-completion.sh
 %{_bindir}/pulseaudio
@@ -407,17 +413,21 @@ exit 0
 %dir %{_libexecdir}/pulse
 %attr(0700, pulse, pulse) %dir %{_localstatedir}/lib/pulse
 
+%files qpaeq
+%{_bindir}/qpaeq
+%{_libdir}/pulse-%{pa_major}/modules/module-equalizer-sink.so
+
 %files esound-compat
 %{_bindir}/esdcompat
 %{_mandir}/man1/esdcompat.1.gz
 
-%if 0%{?rhel} == 0
+%if 0%{?enable_lirc}
 %files module-lirc
 %{_libdir}/pulse-%{pa_major}/modules/module-lirc.so
 %endif
 
 %files module-x11
-%config %{_sysconfdir}/xdg/autostart/pulseaudio.desktop
+%{_sysconfdir}/xdg/autostart/pulseaudio.desktop
 ## no longer included per x11_device_manager.patch
 #config %{_sysconfdir}/xdg/autostart/pulseaudio-kde.desktop
 %{_bindir}/start-pulseaudio-kde
@@ -437,7 +447,7 @@ exit 0
 %{_libdir}/pulse-%{pa_major}/modules/module-raop-discover.so
 %{_libdir}/pulse-%{pa_major}/modules/module-raop-sink.so
 
-%if 0%{?rhel} == 0
+%if 0%{?enable_jack}
 %files module-jack
 %{_libdir}/pulse-%{pa_major}/modules/module-jackdbus-detect.so
 %{_libdir}/pulse-%{pa_major}/modules/module-jack-sink.so
@@ -457,18 +467,24 @@ exit 0
 %{_libdir}/pulse-%{pa_major}/modules/module-gconf.so
 %{_libexecdir}/pulse/gconf-helper
 
+%post libs -p /sbin/ldconfig
+%postun libs -p /sbin/ldconfig
+
 %files libs -f %{name}.lang
 %doc README LICENSE GPL LGPL
 %dir %{_sysconfdir}/pulse/
 %config(noreplace) %{_sysconfdir}/pulse/client.conf
-%{_libdir}/libpulse.so.*
-%{_libdir}/libpulse-simple.so.*
+%{_libdir}/libpulse.so.0*
+%{_libdir}/libpulse-simple.so.0*
 %dir %{_libdir}/pulseaudio/
 %{_libdir}/pulseaudio/libpulsecommon-%{pa_major}.*
 %{_libdir}/pulseaudio/libpulsedsp.*
 
+%post libs-glib2 -p /sbin/ldconfig
+%postun libs-glib2 -p /sbin/ldconfig
+
 %files libs-glib2
-%{_libdir}/libpulse-mainloop-glib.so.*
+%{_libdir}/libpulse-mainloop-glib.so.0*
 
 %files libs-devel
 %doc doxygen/html
@@ -477,10 +493,13 @@ exit 0
 %{_libdir}/libpulse-mainloop-glib.so
 %{_libdir}/libpulse-simple.so
 %{_libdir}/pkgconfig/libpulse*.pc
+%dir %{_datadir}/vala
+%dir %{_datadir}/vala/vapi
 %{_datadir}/vala/vapi/libpulse.vapi
 %{_datadir}/vala/vapi/libpulse.deps
 %{_datadir}/vala/vapi/libpulse-mainloop-glib.vapi
 %{_datadir}/vala/vapi/libpulse-mainloop-glib.deps
+%dir %{_libdir}/cmake
 %{_libdir}/cmake/PulseAudio/
 
 %files utils
@@ -507,6 +526,42 @@ exit 0
 %attr(0600, gdm, gdm) %{_localstatedir}/lib/gdm/.pulse/default.pa
 
 %changelog
+* Tue Mar 11 2014 Rex Dieter <rdieter@fedoraproject.org> 5.0-2
+- drop Requires: kernel (per recent -devel ml thread)
+
+* Tue Mar 04 2014 Rex Dieter <rdieter@fedoraproject.org> 5.0-1
+- 5.0 (#1072259)
+
+* Wed Feb 26 2014 Karsten Hopp <karsten@redhat.com> 4.99.4-3
+- disable make check on PPC* (rhbz #1067470)
+
+* Mon Feb 17 2014 Rex Dieter <rdieter@fedoraproject.org> 4.99.4-2
+- -qpaeq subpkg (#1002585)
+
+* Sat Feb 15 2014 Rex Dieter <rdieter@fedoraproject.org> 4.99.4-1
+- 4.99.4
+
+* Wed Jan 29 2014 Rex Dieter <rdieter@fedoraproject.org> 4.99.3-1
+- 4.99.3
+
+* Mon Jan 27 2014 Wim Taymans <wtaymans@redhat.com> - 4.99.2-2
+- don't mark .desktop and dbus configurations as %config
+
+* Fri Jan 24 2014 Rex Dieter <rdieter@fedoraproject.org> - 4.99.2-1
+- 4.99.2 (#1057528)
+
+* Wed Jan 22 2014 Wim Taymans <wtaymans@redhat.com> - 4.0-12.gitf81e3
+- Use the statically allocated UID and GID from /usr/share/doc/setup/uidgid (#1056656)
+- The pulse-rt group doesn't exist (#885020)
+
+* Wed Jan 22 2014 Rex Dieter <rdieter@fedoraproject.org> - 4.0-11.gitf81e3
+- handle jack/lirc modules better (#1056619)
+- -libs-devel: own some dirs to avoid deps on cmake/vala
+- -module-bluetooth: make dep arch'd for consistency
+
+* Fri Jan 10 2014 Rex Dieter <rdieter@fedoraproject.org> - 4.0-10.gitf81e3
+- enable hardened build (#983606)
+
 * Sat Dec 07 2013 Rex Dieter <rdieter@fedoraproject.org> - 4.0-9.gitf81e3
 - X-KDE-autostart-phase=1
 
