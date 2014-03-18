@@ -2,7 +2,7 @@
 
 Summary: Bluetooth utilities
 Name: bluez
-Version: 5.13
+Version: 5.16
 Release: 1%{?dist}.btts1
 License: GPLv2+
 Group: Applications/System
@@ -196,6 +196,7 @@ mkdir -p $RPM_BUILD_ROOT/%{_libdir}/bluetooth/
 %{_bindir}/sdptool
 %{_bindir}/bccmd
 %{_bindir}/bluetoothctl
+%{_bindir}/bluemoon
 %{_bindir}/btmon
 %{_bindir}/hciattach
 %{_bindir}/hciconfig
@@ -246,8 +247,14 @@ mkdir -p $RPM_BUILD_ROOT/%{_libdir}/bluetooth/
 %{_libdir}/bluez/test
 
 %changelog
-* Wed Jan 15 2014 Martin Kampas <martin.kampas@jolla.com> 5.13-1.btts1
+* Tue Mar 18 2014 Martin Kampas <martin.kampas@jolla.com> 5.16-1.btts1
 - Bluetooth Test Suite specific modifications
+
+* Thu Mar 13 2014 Bastien Nocera <bnocera@redhat.com> 5.16-1
+- Update to 5.16
+
+* Wed Jan 29 2014 Bastien Nocera <bnocera@redhat.com> 5.14-1
+- Update to 5.14
 
 * Mon Jan 06 2014 Bastien Nocera <bnocera@redhat.com> 5.13-1
 - Update to 5.13
