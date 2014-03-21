@@ -55,6 +55,9 @@ Patch24: 0021-bluetooth-Suspend-the-source-sink-the-HFP-oFono-stre.patch
 # jprvita's bluetooth-headsets-media-api branch
 Patch25: 0022-bluetooth-Register-endpoints-for-SCO-based-profiles.patch
 
+# martyone's
+Patch26: 0023-bluetooth-Fix-segfault-on-audio-disconnect.patch
+
 ## upstream patches
 
 BuildRequires:  m4
@@ -261,6 +264,7 @@ This package contains GDM integration hooks for the PulseAudio sound server.
 %patch23 -p1 -b .0020-bluetooth-Notify-the-main-thread-of-a-stream-fd-HUP
 %patch24 -p1 -b .0021-bluetooth-Suspend-the-source-sink-the-HFP-oFono-stre
 %patch25 -p1 -b .0022-bluetooth-Register-endpoints-for-SCO-based-profiles
+%patch26 -p1 -b .0023-bluetooth-Fix-segfault-on-audio-disconnect
 
 sed -i.no_consolekit -e \
   's/^load-module module-console-kit/#load-module module-console-kit/' \

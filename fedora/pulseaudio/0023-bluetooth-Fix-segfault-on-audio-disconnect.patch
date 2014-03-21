@@ -1,0 +1,39 @@
+From ffe2410ea92fb28beaa74550c8ca9b9fa2b5f8c8 Mon Sep 17 00:00:00 2001
+From: Martin Kampas <martin.kampas@tieto.com>
+Date: Fri, 21 Mar 2014 13:37:27 +0100
+Subject: [PATCH 23/23] bluetooth: Fix segfault on audio disconnect
+
+ #0  pa_bluetooth_transport_free (t=0x6d6d2d616c6c6f4a) at modules/bluetooth/bluez5-util.c:205
+ #1  0x00007f4a2b693f76 in hf_audio_card_free (data=0x7f4a3edf3480) at modules/bluetooth/hfaudioagent-ofono.c:118
+ #2  0x00007f4a3d34d4b4 in remove_entry (h=h@entry=0x7f4a3edf2910, e=0x7f4a3ede9df0) at pulsecore/hashmap.c:108
+ #3  0x00007f4a3d34daf0 in pa_hashmap_remove (h=0x7f4a3edf2910, key=<optimized out>) at pulsecore/hashmap.c:205
+ #4  0x00007f4a2b6956cd in filter_cb (bus=<optimized out>, m=0x7f4a1c001430, data=0x7f4a3edf13b0) at modules/bluetooth/hfaudioagent-ofono.c:457
+ #5  0x00007f4a3b4b606e in dbus_connection_dispatch (connection=0x7f4a3edef920) at dbus-connection.c:4631
+ #6  0x00007f4a3d371974 in dispatch_cb (ea=0x7f4a3edb5ea8, ev=0x7f4a3edefbc0, userdata=<optimized out>) at pulsecore/dbus-util.c:55
+ #7  0x00007f4a3da525fa in dispatch_defer (m=0x7f4a3edb5e50) at pulse/mainloop.c:683
+ #8  pa_mainloop_dispatch (m=m@entry=0x7f4a3edb5e50) at pulse/mainloop.c:896
+ #9  0x00007f4a3da5284a in pa_mainloop_iterate (m=m@entry=0x7f4a3edb5e50, block=block@entry=1, retval=retval@entry=0x7fff01a3ceb8) at pulse/mainloop.c:936
+ #10 0x00007f4a3da528f0 in pa_mainloop_run (m=m@entry=0x7f4a3edb5e50, retval=retval@entry=0x7fff01a3ceb8) at pulse/mainloop.c:951
+ #11 0x00007f4a3e6b855f in main (argc=<optimized out>, argv=<optimized out>) at daemon/main.c:1150
+---
+ src/modules/bluetooth/hfaudioagent-ofono.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/modules/bluetooth/hfaudioagent-ofono.c b/src/modules/bluetooth/hfaudioagent-ofono.c
+index fa8af94..19c1ee1 100644
+--- a/src/modules/bluetooth/hfaudioagent-ofono.c
++++ b/src/modules/bluetooth/hfaudioagent-ofono.c
+@@ -594,8 +594,8 @@ hf_audio_agent_data *hf_audio_agent_init(pa_core *c) {
+ 
+     hfdata = pa_xnew0(hf_audio_agent_data, 1);
+     hfdata->core = c;
+-    hfdata->hf_audio_cards = pa_hashmap_new_full(pa_idxset_string_hash_func, pa_idxset_string_compare_func, hf_audio_card_free,
+-                                                 NULL);
++    hfdata->hf_audio_cards = pa_hashmap_new_full(pa_idxset_string_hash_func, pa_idxset_string_compare_func,
++                                                 NULL, hf_audio_card_free);
+     hfdata->discovery = pa_shared_get(c, "bluetooth-discovery");
+ 
+     dbus_error_init(&err);
+-- 
+1.8.5.3
+
