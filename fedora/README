@@ -25,9 +25,6 @@ bluez/
 btts/
         - Packaging of btts itself.
 
-ofono/
-        - ofono for Fedora (no official Fedora package available).
-
 *.rpmbuild.sh
         - rpmbuild based scripts to build the respective packages. Result is
           placed under the rpmbuild directory.

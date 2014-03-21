@@ -14,7 +14,6 @@ filter=(
 	"pulseaudio"
 	"pulseaudio-module-bluetooth"
 	"pulseaudio-utils"
-	"ofono*"
 	"echoprint-codegen*"
 	"btts*"
 )
