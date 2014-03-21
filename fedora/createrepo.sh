@@ -27,3 +27,8 @@ then
 		sudo tee ${repo_file} <<<"${repo_config}"
 	fi
 fi
+
+if [[ -f ${repo_file} ]]
+then
+	sudo yum makecache --disablerepo='*' --enablerepo='btts-local'
+fi
