@@ -20,7 +20,8 @@ then
 	cd pulseaudio
 	git fetch
 	git reset --hard "${gitcommit}"
-	GIT_DESCRIBE_FOR_BUILD="$(git describe --abbrev=5)" ./autogen.sh
+	#export GIT_DESCRIBE_FOR_BUILD="$(git describe --abbrev=6)"
+	./autogen.sh
 	make dist
 	cp "${source0}" ../../../pulseaudio/
 	cd ../../..

@@ -1,9 +1,9 @@
 %global pa_major   5.0
 #global pa_minor   0
 
-#global gitrel     266
-#global gitcommit  f81e3e1d7852c05b4b737ac7dac4db95798f0117
-#global shortcommit %(c=%{gitcommit}; echo ${c:0:5})
+%global gitrel     20
+%global gitcommit  a9351f1a7180cd7dce1eaae42a99e2e51d1fcfe1
+%global shortcommit %(c=%{gitcommit}; echo ${c:0:6})
 
 %ifarch %{ix86} x86_64 %{arm}
 %global with_webrtc 1
@@ -27,11 +27,6 @@ Source0:        http://freedesktop.org/software/pulseaudio/releases/pulseaudio-%
 %endif
 Source1:        default.pa-for-gdm
 
-## upstreamable patches
-# simplify and ship only 1 autostart file
-Patch1: pulseaudio-x11_device_manager.patch
-# set X-KDE-autostart-phase=1
-Patch2: pulseaudio-4.0-kde_autostart_phase.patch
 Patch3: 0001-bluetooth-disable-smoothing.patch
 
 ## upstream patches
@@ -216,8 +211,6 @@ This package contains GDM integration hooks for the PulseAudio sound server.
 %prep
 %setup -q -T -b0 -n %{name}-%{version}%{?gitrel:-%{gitrel}-g%{shortcommit}}
 
-%patch1 -p1 -b .x11_device_manager
-%patch2 -p1 -b .kde_autostart_phase
 %patch3 -p1 -b .disable_smoothing
 
 sed -i.no_consolekit -e \
@@ -432,13 +425,11 @@ exit 0
 %{_sysconfdir}/xdg/autostart/pulseaudio.desktop
 ## no longer included per x11_device_manager.patch
 #config %{_sysconfdir}/xdg/autostart/pulseaudio-kde.desktop
-%{_bindir}/start-pulseaudio-kde
 %{_bindir}/start-pulseaudio-x11
 %{_libdir}/pulse-%{pa_major}/modules/module-x11-bell.so
 %{_libdir}/pulse-%{pa_major}/modules/module-x11-publish.so
 %{_libdir}/pulse-%{pa_major}/modules/module-x11-xsmp.so
 %{_libdir}/pulse-%{pa_major}/modules/module-x11-cork-request.so
-%{_mandir}/man1/start-pulseaudio-kde.1.gz
 %{_mandir}/man1/start-pulseaudio-x11.1.gz
 
 %files module-zeroconf
