@@ -29,6 +29,32 @@ Source1:        default.pa-for-gdm
 
 Patch3: 0001-bluetooth-disable-smoothing.patch
 
+# jprvita's bluetooth-hf-audio-agent branch
+Patch4: 0001-bluetooth-Fix-lines-going-over-collumn-128.patch
+Patch5: 0002-bluetooth-Change-BlueZ-5-card-profile-name-from-a2dp.patch
+Patch6: 0003-bluetooth-Add-basic-support-for-HEADSET-profiles.patch
+Patch7: 0004-bluetooth-Add-BlueZ-5-headset-profile-names-in-polic.patch
+Patch8: 0005-bluetooth-Create-Handsfree-Audio-Agent-NULL-backend.patch
+Patch9: 0006-bluetooth-Create-Handsfree-Audio-Agent-oFono-backend.patch
+Patch10: 0007-bluetooth-Monitor-D-Bus-signals.patch
+Patch11: 0008-bluetooth-Create-pa_bluetooth_dbus_send_and_add_to_p.patch
+Patch12: 0009-bluetooth-Register-Unregister-Handsfree-Audio-Agent-.patch
+Patch13: 0010-bluetooth-List-HandsfreeAudioCard-objects-from-oFono.patch
+Patch14: 0011-bluetooth-Parse-HandsfreeAudioCard-properties.patch
+Patch15: 0012-bluetooth-Implement-transport-acquire-for-hf_audio_a.patch
+Patch16: 0013-bluetooth-Implement-transport-release-for-hf_audio_a.patch
+Patch17: 0014-bluetooth-Track-oFono-service.patch
+Patch18: 0015-bluetooth-Handle-CardAdded-signal.patch
+Patch19: 0016-bluetooth-Handle-CardRemoved-signal.patch
+Patch20: 0017-bluetooth-Implement-org.ofono.HandsfreeAudioAgent.Re.patch
+Patch21: 0018-bluetooth-Implement-org.ofono.HandsfreeAudioAgent.Ne.patch
+Patch22: 0019-bluetooth-Rename-variable-to-improve-code-readabilit.patch
+Patch23: 0020-bluetooth-Notify-the-main-thread-of-a-stream-fd-HUP.patch
+Patch24: 0021-bluetooth-Suspend-the-source-sink-the-HFP-oFono-stre.patch
+
+# jprvita's bluetooth-headsets-media-api branch
+Patch25: 0022-bluetooth-Register-endpoints-for-SCO-based-profiles.patch
+
 ## upstream patches
 
 BuildRequires:  m4
@@ -213,9 +239,34 @@ This package contains GDM integration hooks for the PulseAudio sound server.
 
 %patch3 -p1 -b .disable_smoothing
 
+%patch4  -p1 -b .0001-bluetooth-Fix-lines-going-over-collumn-128
+%patch5  -p1 -b .0002-bluetooth-Change-BlueZ-5-card-profile-name-from-a2dp
+%patch6  -p1 -b .0003-bluetooth-Add-basic-support-for-HEADSET-profiles
+%patch7  -p1 -b .0004-bluetooth-Add-BlueZ-5-headset-profile-names-in-polic
+%patch8  -p1 -b .0005-bluetooth-Create-Handsfree-Audio-Agent-NULL-backend
+%patch9  -p1 -b .0006-bluetooth-Create-Handsfree-Audio-Agent-oFono-backend
+%patch10 -p1 -b .0007-bluetooth-Monitor-D-Bus-signals
+%patch11 -p1 -b .0008-bluetooth-Create-pa_bluetooth_dbus_send_and_add_to_p
+%patch12 -p1 -b .0009-bluetooth-Register-Unregister-Handsfree-Audio-Agent-
+%patch13 -p1 -b .0010-bluetooth-List-HandsfreeAudioCard-objects-from-oFono
+%patch14 -p1 -b .0011-bluetooth-Parse-HandsfreeAudioCard-properties
+%patch15 -p1 -b .0012-bluetooth-Implement-transport-acquire-for-hf_audio_a
+%patch16 -p1 -b .0013-bluetooth-Implement-transport-release-for-hf_audio_a
+%patch17 -p1 -b .0014-bluetooth-Track-oFono-service
+%patch18 -p1 -b .0015-bluetooth-Handle-CardAdded-signal
+%patch19 -p1 -b .0016-bluetooth-Handle-CardRemoved-signal
+%patch20 -p1 -b .0017-bluetooth-Implement-org.ofono.HandsfreeAudioAgent.Re
+%patch21 -p1 -b .0018-bluetooth-Implement-org.ofono.HandsfreeAudioAgent.Ne
+%patch22 -p1 -b .0019-bluetooth-Rename-variable-to-improve-code-readabilit
+%patch23 -p1 -b .0020-bluetooth-Notify-the-main-thread-of-a-stream-fd-HUP
+%patch24 -p1 -b .0021-bluetooth-Suspend-the-source-sink-the-HFP-oFono-stre
+%patch25 -p1 -b .0022-bluetooth-Register-endpoints-for-SCO-based-profiles
+
 sed -i.no_consolekit -e \
   's/^load-module module-console-kit/#load-module module-console-kit/' \
   src/daemon/default.pa.in
+
+NOCONFIGURE=1 ./bootstrap.sh
 
 %if 0%{?gitrel:1}
 # fixup PACKAGE_VERSION that leaks into pkgconfig files and friends
@@ -240,6 +291,7 @@ sed -i -e 's|"/lib /usr/lib|"/%{_lib} %{_libdir}|' configure
   %{?enable_lirc:--enable-lirc}%{!?enable_lirc:--disable-lirc} \
   %{?bluez4:--enable-bluez4}%{!?bluez4:--disable-bluez4} \
   %{?bluez5:--enable-bluez5}%{!?bluez5:--disable-bluez5} \
+  --with-bluetooth-headset-backend=ofono \
 %ifarch %{arm}
   --disable-neon-opt \
 %endif

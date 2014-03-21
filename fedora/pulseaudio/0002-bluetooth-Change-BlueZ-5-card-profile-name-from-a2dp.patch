@@ -1,0 +1,46 @@
+From 7d68f12afa119d69bb4edfdb9b13d4be7bfbb8e6 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= <jprvita@gmail.com>
+Date: Thu, 21 Nov 2013 11:39:03 -0300
+Subject: [PATCH 02/23] bluetooth: Change BlueZ 5 card profile name from a2dp
+ to a2dp_sink
+
+This name is more acurate with regards of what role we're currently
+playing and we've already been using it in
+pa_bluetooth_profile_to_string() since 449d6cb.
+---
+ src/modules/bluetooth/module-bluetooth-policy.c | 3 ++-
+ src/modules/bluetooth/module-bluez5-device.c    | 4 +---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluetooth-policy.c b/src/modules/bluetooth/module-bluetooth-policy.c
+index 0031ccf..6837f0d 100644
+--- a/src/modules/bluetooth/module-bluetooth-policy.c
++++ b/src/modules/bluetooth/module-bluetooth-policy.c
+@@ -172,7 +172,8 @@ static pa_hook_result_t profile_available_hook_callback(pa_core *c, pa_card_prof
+         return PA_HOOK_OK;
+ 
+     /* Do not automatically switch profiles for headsets, just in case */
+-    if (pa_streq(profile->name, "hsp") || pa_streq(profile->name, "a2dp"))
++    /* TODO: remove a2dp when we decide to remove support for BlueZ 4 */
++    if (pa_streq(profile->name, "hsp") || pa_streq(profile->name, "a2dp") || pa_streq(profile->name, "a2dp_sink"))
+         return PA_HOOK_OK;
+ 
+     is_active_profile = card->active_profile == profile;
+diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
+index 857a972..1967325 100644
+--- a/src/modules/bluetooth/module-bluez5-device.c
++++ b/src/modules/bluetooth/module-bluez5-device.c
+@@ -1524,9 +1524,7 @@ static pa_card_profile *create_card_profile(struct userdata *u, const char *uuid
+     pa_assert_se(output_port = pa_hashmap_get(ports, u->output_port_name));
+ 
+     if (pa_streq(uuid, PA_BLUETOOTH_UUID_A2DP_SINK)) {
+-	/* TODO: Change this profile's name to a2dp_sink, to reflect the remote
+-         * device's role and be consistent with the a2dp source profile */
+-        cp = pa_card_profile_new("a2dp", _("High Fidelity Playback (A2DP Sink)"), sizeof(pa_bluetooth_profile_t));
++        cp = pa_card_profile_new("a2dp_sink", _("High Fidelity Playback (A2DP Sink)"), sizeof(pa_bluetooth_profile_t));
+         cp->priority = 10;
+         cp->n_sinks = 1;
+         cp->n_sources = 0;
+-- 
+1.8.5.3
+

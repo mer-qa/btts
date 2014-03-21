@@ -1,0 +1,36 @@
+From 5be26448d3963bcffd20c4d52c552d5d35a3a0a0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= <jprvita@openbossa.org>
+Date: Tue, 4 Feb 2014 17:57:18 -0300
+Subject: [PATCH 21/23] bluetooth: Suspend the source/sink the HFP-oFono stream
+ fd HUP
+
+---
+ src/modules/bluetooth/module-bluez5-device.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
+index a292164..f54d300 100644
+--- a/src/modules/bluetooth/module-bluez5-device.c
++++ b/src/modules/bluetooth/module-bluez5-device.c
+@@ -1996,6 +1996,7 @@ static pa_hook_result_t transport_state_changed_cb(pa_bluetooth_discovery *y, pa
+ /* Run from main thread context */
+ static int device_process_msg(pa_msgobject *obj, int code, void *data, int64_t offset, pa_memchunk *chunk) {
+     struct bluetooth_msg *m = BLUETOOTH_MSG(obj);
++    struct userdata *u = m->card->userdata;
+ 
+     switch (code) {
+         case BLUETOOTH_MESSAGE_IO_THREAD_FAILED:
+@@ -2006,6 +2007,10 @@ static int device_process_msg(pa_msgobject *obj, int code, void *data, int64_t o
+             pa_assert_se(pa_card_set_profile(m->card, pa_hashmap_get(m->card->profiles, "off"), false) >= 0);
+             break;
+         case BLUETOOTH_MESSAGE_STREAM_FD_HUP:
++            if (u->transport->profile == PA_BLUETOOTH_PROFILE_HEADSET_AUDIO_GATEWAY) {
++                pa_source_suspend(u->source, true, PA_SUSPEND_USER);
++                pa_sink_suspend(u->sink, true, PA_SUSPEND_USER);
++            }
+             break;
+     }
+ 
+-- 
+1.8.5.3
+

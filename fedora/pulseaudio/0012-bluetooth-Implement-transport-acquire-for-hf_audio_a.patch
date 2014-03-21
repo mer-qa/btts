@@ -1,0 +1,66 @@
+From 80bcebd58258278911dbaf2bb4beb6feb9c73703 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= <jprvita@openbossa.org>
+Date: Tue, 9 Jul 2013 22:22:28 -0300
+Subject: [PATCH 12/23] bluetooth: Implement transport acquire for
+ hf_audio_agent transports
+
+---
+ src/modules/bluetooth/hfaudioagent-ofono.c | 35 +++++++++++++++++++++++++++++-
+ 1 file changed, 34 insertions(+), 1 deletion(-)
+
+diff --git a/src/modules/bluetooth/hfaudioagent-ofono.c b/src/modules/bluetooth/hfaudioagent-ofono.c
+index d381a29..a565601 100644
+--- a/src/modules/bluetooth/hfaudioagent-ofono.c
++++ b/src/modules/bluetooth/hfaudioagent-ofono.c
+@@ -23,6 +23,8 @@
+ #include <config.h>
+ #endif
+ 
++#include <errno.h>
++
+ #include <pulsecore/core-util.h>
+ #include <pulsecore/dbus-shared.h>
+ #include <pulsecore/shared.h>
+@@ -121,7 +123,38 @@ static void hf_audio_card_free(void *data) {
+ }
+ 
+ static int hf_audio_agent_transport_acquire(pa_bluetooth_transport *t, bool optional, size_t *imtu, size_t *omtu) {
+-    return -1;
++    hf_audio_agent_data *hfdata = t->userdata;
++    hf_audio_card *hfac = pa_hashmap_get(hfdata->hf_audio_cards, t->path);
++
++    if (!optional) {
++        DBusMessage *m;
++
++        pa_assert_se(m = dbus_message_new_method_call(t->owner, t->path, "org.ofono.HandsfreeAudioCard", "Connect"));
++        pa_assert_se(dbus_connection_send(pa_dbus_connection_get(hfdata->connection), m, NULL));
++
++        return -1;
++    }
++
++    /* The correct block size should take into account the SCO MTU from
++     * the Bluetooth adapter and (for adapters in the USB bus) the MxPS
++     * value from the Isoc USB endpoint in use by btusb and should be
++     * made available to userspace by the Bluetooth kernel subsystem.
++     * Meanwhile the empiric value 48 will be used. */
++    if (imtu)
++        *imtu = 48;
++    if (omtu)
++        *omtu = 48;
++
++    if (hfac) {
++        t->codec = hfac->codec;
++
++        /* Do the socket deferred setup */
++        if (recv(hfac->fd, NULL, 0, 0) < 0)
++            pa_log_error("Deferred setup failed on fd %d: %s (%d)", hfac->fd, strerror(errno), errno);
++
++        return hfac->fd;
++    } else
++        return -1;
+ }
+ 
+ static void hf_audio_agent_transport_release(pa_bluetooth_transport *t) {
+-- 
+1.8.5.3
+

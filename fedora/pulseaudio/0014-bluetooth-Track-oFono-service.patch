@@ -1,0 +1,71 @@
+From ead76f3a000872f5bdc3afa479b213cd49300621 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= <jprvita@openbossa.org>
+Date: Thu, 11 Jul 2013 11:43:48 -0300
+Subject: [PATCH 14/23] bluetooth: Track oFono service
+
+---
+ src/modules/bluetooth/hfaudioagent-ofono.c | 41 ++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
+diff --git a/src/modules/bluetooth/hfaudioagent-ofono.c b/src/modules/bluetooth/hfaudioagent-ofono.c
+index c710caf..23b10f0 100644
+--- a/src/modules/bluetooth/hfaudioagent-ofono.c
++++ b/src/modules/bluetooth/hfaudioagent-ofono.c
+@@ -379,6 +379,7 @@ static void hf_audio_agent_unregister(hf_audio_agent_data *hfdata) {
+ 
+ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *data) {
+     const char *sender;
++    DBusError err;
+     hf_audio_agent_data *hfdata = data;
+ 
+     pa_assert(bus);
+@@ -389,6 +390,46 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *da
+     if (!pa_safe_streq(hfdata->ofono_bus_id, sender) && !pa_streq("org.freedesktop.DBus", sender))
+         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+ 
++    dbus_error_init(&err);
++
++    if (dbus_message_is_signal(m, "org.freedesktop.DBus", "NameOwnerChanged")) {
++        const char *name, *old_owner, *new_owner;
++
++        if (!dbus_message_get_args(m, &err,
++                                   DBUS_TYPE_STRING, &name,
++                                   DBUS_TYPE_STRING, &old_owner,
++                                   DBUS_TYPE_STRING, &new_owner,
++                                   DBUS_TYPE_INVALID)) {
++            pa_log_error("Failed to parse org.freedesktop.DBus.NameOwnerChanged: %s", err.message);
++            goto fail;
++        }
++
++        if (pa_streq(name, OFONO_SERVICE)) {
++
++            if (old_owner && *old_owner) {
++                pa_log_debug("oFono disappeared");
++
++                if (hfdata->hf_audio_cards) {
++                    pa_hashmap_free(hfdata->hf_audio_cards);
++                    hfdata->hf_audio_cards = NULL;
++                }
++
++                if(hfdata->ofono_bus_id) {
++                    pa_xfree(hfdata->ofono_bus_id);
++                    hfdata->ofono_bus_id = NULL;
++                }
++            }
++
++            if (new_owner && *new_owner) {
++                pa_log_debug("oFono appeared");
++                hf_audio_agent_register(hfdata);
++            }
++        }
++
++    }
++
++fail:
++    dbus_error_free(&err);
+     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+ }
+ 
+-- 
+1.8.5.3
+

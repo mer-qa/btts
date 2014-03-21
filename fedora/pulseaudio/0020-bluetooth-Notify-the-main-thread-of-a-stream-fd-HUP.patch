@@ -1,0 +1,42 @@
+From bfb8703e2b7c1d66bcf133501816f2a8ce125ed0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= <jprvita@openbossa.org>
+Date: Tue, 4 Feb 2014 17:52:15 -0300
+Subject: [PATCH 20/23] bluetooth: Notify the main thread of a stream fd HUP
+
+---
+ src/modules/bluetooth/module-bluez5-device.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
+index 2864d73..a292164 100644
+--- a/src/modules/bluetooth/module-bluez5-device.c
++++ b/src/modules/bluetooth/module-bluez5-device.c
+@@ -74,6 +74,7 @@ static const char* const valid_modargs[] = {
+ 
+ enum {
+     BLUETOOTH_MESSAGE_IO_THREAD_FAILED,
++    BLUETOOTH_MESSAGE_STREAM_FD_HUP,
+     BLUETOOTH_MESSAGE_MAX
+ };
+ 
+@@ -1431,6 +1432,8 @@ io_fail:
+         pending_read_bytes = 0;
+         writable = false;
+ 
++        pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(u->msg), BLUETOOTH_MESSAGE_STREAM_FD_HUP, NULL, 0, NULL, NULL);
++
+         teardown_stream(u);
+     }
+ 
+@@ -2002,6 +2005,8 @@ static int device_process_msg(pa_msgobject *obj, int code, void *data, int64_t o
+             pa_log_debug("Switching the profile to off due to IO thread failure.");
+             pa_assert_se(pa_card_set_profile(m->card, pa_hashmap_get(m->card->profiles, "off"), false) >= 0);
+             break;
++        case BLUETOOTH_MESSAGE_STREAM_FD_HUP:
++            break;
+     }
+ 
+     return 0;
+-- 
+1.8.5.3
+

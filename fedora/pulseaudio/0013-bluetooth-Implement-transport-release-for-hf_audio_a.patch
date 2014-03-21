@@ -1,0 +1,33 @@
+From c037e2c816b10c7c9ba892473d583d4e1d9b35bc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= <jprvita@openbossa.org>
+Date: Mon, 3 Feb 2014 18:08:36 -0300
+Subject: [PATCH 13/23] bluetooth: Implement transport release for
+ hf_audio_agent transports
+
+---
+ src/modules/bluetooth/hfaudioagent-ofono.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/modules/bluetooth/hfaudioagent-ofono.c b/src/modules/bluetooth/hfaudioagent-ofono.c
+index a565601..c710caf 100644
+--- a/src/modules/bluetooth/hfaudioagent-ofono.c
++++ b/src/modules/bluetooth/hfaudioagent-ofono.c
+@@ -158,6 +158,15 @@ static int hf_audio_agent_transport_acquire(pa_bluetooth_transport *t, bool opti
+ }
+ 
+ static void hf_audio_agent_transport_release(pa_bluetooth_transport *t) {
++    hf_audio_agent_data *hfdata = t->userdata;
++    hf_audio_card *hfac = pa_hashmap_get(hfdata->hf_audio_cards, t->path);
++
++    if (t->state <= PA_BLUETOOTH_TRANSPORT_STATE_IDLE) {
++        pa_log_info("Transport %s already released", t->path);
++        return;
++    }
++
++    hfac->fd = -1;
+ }
+ 
+ static void hf_audio_agent_card_found(hf_audio_agent_data *hfdata, const char *path, DBusMessageIter *props_i) {
+-- 
+1.8.5.3
+

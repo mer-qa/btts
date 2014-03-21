@@ -1,0 +1,111 @@
+From 70836d2312fe60b7834e4173303b40ea75f3d8a6 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= <jprvita@openbossa.org>
+Date: Tue, 9 Jul 2013 18:11:16 -0300
+Subject: [PATCH 22/23] bluetooth: Register endpoints for SCO-based profiles
+
+Create and register endpoints for HSP Head Unit, HSP Audio Gateway, HFP
+Head Unit and HFP Audio Gateway.
+---
+ src/modules/bluetooth/bluez5-util.c | 44 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/src/modules/bluetooth/bluez5-util.c b/src/modules/bluetooth/bluez5-util.c
+index 2e1be47..85bdd38 100644
+--- a/src/modules/bluetooth/bluez5-util.c
++++ b/src/modules/bluetooth/bluez5-util.c
+@@ -49,6 +49,10 @@
+ 
+ #define A2DP_SOURCE_ENDPOINT "/MediaEndpoint/A2DPSource"
+ #define A2DP_SINK_ENDPOINT "/MediaEndpoint/A2DPSink"
++#define HSP_AG_ENDPOINT "/MediaEndpoint/HSPAudioGateway"
++#define HSP_HS_ENDPOINT "/MediaEndpoint/HSPHeadUnit"
++#define HFP_AG_ENDPOINT "/MediaEndpoint/HFPAudioGateway"
++#define HFP_HF_ENDPOINT "/MediaEndpoint/HFPHeadUnit"
+ 
+ #define ENDPOINT_INTROSPECT_XML                                         \
+     DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE                           \
+@@ -796,6 +800,10 @@ static void parse_interfaces_and_properties(pa_bluetooth_discovery *y, DBusMessa
+ 
+             register_endpoint(y, path, A2DP_SOURCE_ENDPOINT, PA_BLUETOOTH_UUID_A2DP_SOURCE);
+             register_endpoint(y, path, A2DP_SINK_ENDPOINT, PA_BLUETOOTH_UUID_A2DP_SINK);
++            register_endpoint(y, path, HSP_HS_ENDPOINT, PA_BLUETOOTH_UUID_HSP_HS);
++            register_endpoint(y, path, HSP_AG_ENDPOINT, PA_BLUETOOTH_UUID_HSP_AG);
++            register_endpoint(y, path, HFP_HF_ENDPOINT, PA_BLUETOOTH_UUID_HFP_HF);
++            register_endpoint(y, path, HFP_AG_ENDPOINT, PA_BLUETOOTH_UUID_HFP_AG);
+ 
+         } else if (pa_streq(interface, BLUEZ_DEVICE_INTERFACE)) {
+ 
+@@ -1164,6 +1172,18 @@ static DBusMessage *endpoint_set_configuration(DBusConnection *conn, DBusMessage
+             } else if (pa_streq(endpoint_path, A2DP_SINK_ENDPOINT)) {
+                 if (pa_streq(uuid, PA_BLUETOOTH_UUID_A2DP_SINK))
+                     p = PA_BLUETOOTH_PROFILE_A2DP_SOURCE;
++            } else if (strcasecmp(endpoint_path, HSP_HS_ENDPOINT) == 0) {
++                if (strcasecmp(uuid, PA_BLUETOOTH_UUID_HSP_HS) == 0)
++                    p = PA_BLUETOOTH_PROFILE_HEADSET_AUDIO_GATEWAY;
++            } else if (strcasecmp(endpoint_path, HFP_HF_ENDPOINT) == 0) {
++                if (strcasecmp(uuid, PA_BLUETOOTH_UUID_HFP_HF) == 0)
++                    p = PA_BLUETOOTH_PROFILE_HEADSET_AUDIO_GATEWAY;
++            } else if (strcasecmp(endpoint_path, HSP_AG_ENDPOINT) == 0) {
++                if (strcasecmp(uuid, PA_BLUETOOTH_UUID_HSP_AG) == 0)
++                    p = PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT;
++            } else if (strcasecmp(endpoint_path, HFP_AG_ENDPOINT) == 0) {
++                if (strcasecmp(uuid, PA_BLUETOOTH_UUID_HFP_AG) == 0)
++                    p = PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT;
+             }
+ 
+             if (p == PA_BLUETOOTH_PROFILE_OFF) {
+@@ -1497,6 +1517,18 @@ static void endpoint_init(pa_bluetooth_discovery *y, pa_bluetooth_profile_t prof
+             pa_assert_se(dbus_connection_register_object_path(pa_dbus_connection_get(y->connection), A2DP_SINK_ENDPOINT,
+                                                               &vtable_endpoint, y));
+             break;
++        case PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT:
++            pa_assert_se(dbus_connection_register_object_path(pa_dbus_connection_get(y->connection), HSP_AG_ENDPOINT,
++                                                              &vtable_endpoint, y));
++            pa_assert_se(dbus_connection_register_object_path(pa_dbus_connection_get(y->connection), HFP_AG_ENDPOINT,
++                                                              &vtable_endpoint, y));
++            break;
++        case PA_BLUETOOTH_PROFILE_HEADSET_AUDIO_GATEWAY:
++            pa_assert_se(dbus_connection_register_object_path(pa_dbus_connection_get(y->connection), HSP_HS_ENDPOINT,
++                                                              &vtable_endpoint, y));
++            pa_assert_se(dbus_connection_register_object_path(pa_dbus_connection_get(y->connection), HFP_HF_ENDPOINT,
++                                                              &vtable_endpoint, y));
++            break;
+         default:
+             pa_assert_not_reached();
+             break;
+@@ -1513,6 +1545,14 @@ static void endpoint_done(pa_bluetooth_discovery *y, pa_bluetooth_profile_t prof
+         case PA_BLUETOOTH_PROFILE_A2DP_SOURCE:
+             dbus_connection_unregister_object_path(pa_dbus_connection_get(y->connection), A2DP_SINK_ENDPOINT);
+             break;
++        case PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT:
++            dbus_connection_unregister_object_path(pa_dbus_connection_get(y->connection), HSP_AG_ENDPOINT);
++            dbus_connection_unregister_object_path(pa_dbus_connection_get(y->connection), HFP_AG_ENDPOINT);
++            break;
++        case PA_BLUETOOTH_PROFILE_HEADSET_AUDIO_GATEWAY:
++            dbus_connection_unregister_object_path(pa_dbus_connection_get(y->connection), HSP_HS_ENDPOINT);
++            dbus_connection_unregister_object_path(pa_dbus_connection_get(y->connection), HFP_HF_ENDPOINT);
++            break;
+         default:
+             pa_assert_not_reached();
+             break;
+@@ -1576,6 +1616,8 @@ pa_bluetooth_discovery* pa_bluetooth_discovery_get(pa_core *c) {
+ 
+     endpoint_init(y, PA_BLUETOOTH_PROFILE_A2DP_SINK);
+     endpoint_init(y, PA_BLUETOOTH_PROFILE_A2DP_SOURCE);
++    endpoint_init(y, PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT);
++    endpoint_init(y, PA_BLUETOOTH_PROFILE_HEADSET_AUDIO_GATEWAY);
+     y->hf_audio_agent = hf_audio_agent_init(c);
+ 
+     get_managed_objects(y);
+@@ -1644,6 +1686,8 @@ void pa_bluetooth_discovery_unref(pa_bluetooth_discovery *y) {
+ 
+         endpoint_done(y, PA_BLUETOOTH_PROFILE_A2DP_SINK);
+         endpoint_done(y, PA_BLUETOOTH_PROFILE_A2DP_SOURCE);
++        endpoint_done(y, PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT);
++        endpoint_done(y, PA_BLUETOOTH_PROFILE_HEADSET_AUDIO_GATEWAY);
+ 
+         pa_dbus_connection_unref(y->connection);
+     }
+-- 
+1.8.5.3
+

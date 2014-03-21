@@ -1,0 +1,37 @@
+From a501456478ae4982ec6cc56512af7639f7fc800c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= <jprvita@openbossa.org>
+Date: Tue, 4 Feb 2014 17:53:52 -0300
+Subject: [PATCH 19/23] bluetooth: Rename variable to improve code readability
+
+The label 'u' is used throughout the code to name pointers to the struct
+userdata.
+---
+ src/modules/bluetooth/module-bluez5-device.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
+index aaeb23f..2864d73 100644
+--- a/src/modules/bluetooth/module-bluez5-device.c
++++ b/src/modules/bluetooth/module-bluez5-device.c
+@@ -1992,15 +1992,15 @@ static pa_hook_result_t transport_state_changed_cb(pa_bluetooth_discovery *y, pa
+ 
+ /* Run from main thread context */
+ static int device_process_msg(pa_msgobject *obj, int code, void *data, int64_t offset, pa_memchunk *chunk) {
+-    struct bluetooth_msg *u = BLUETOOTH_MSG(obj);
++    struct bluetooth_msg *m = BLUETOOTH_MSG(obj);
+ 
+     switch (code) {
+         case BLUETOOTH_MESSAGE_IO_THREAD_FAILED:
+-            if (u->card->module->unload_requested)
++            if (m->card->module->unload_requested)
+                 break;
+ 
+             pa_log_debug("Switching the profile to off due to IO thread failure.");
+-            pa_assert_se(pa_card_set_profile(u->card, pa_hashmap_get(u->card->profiles, "off"), false) >= 0);
++            pa_assert_se(pa_card_set_profile(m->card, pa_hashmap_get(m->card->profiles, "off"), false) >= 0);
+             break;
+     }
+ 
+-- 
+1.8.5.3
+
