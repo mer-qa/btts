@@ -14,16 +14,29 @@ Rebuild and reinstall a single package
         ./bluez.rpmbuild.sh
         ./reinstallall.sh
 
+Rebuild and reinstall just the btts package
+
+        ./btts.rpmbuild.sh
+        ./reinstall.sh
+
 
 CONTENT OF THIS DIRECTORY
 =========================
 
 bluez/
-        - Based on Fedora official packaging. Adds items not included in
-          official Fedora packages.
+        - Based on Fedora official packaging.
+        - Packaged some files not included in official Fedora packages
+        - Patched
 
 btts/
         - Packaging of btts itself.
+
+echoprint-codegen/
+        - Not available in Fedora.
+
+pulseaudio/
+        - Based on Fedora official packaging.
+        - Patched
 
 *.rpmbuild.sh
         - rpmbuild based scripts to build the respective packages. Result is
@@ -41,6 +54,11 @@ createrepo.sh
         - Script to yumify rpmbuild/RPMS directory - this can be then
           registered as a custom yum repository. Automatically invoked by
           rebuildall.sh.
+
+reinstall.sh
+        - Script to automatically (re)install btts* packages. It installs from a
+          yum repository named 'btts-local' (previously created and registered
+          with createrepo.sh.)
 
 reinstallall.sh
         - Script to automatically (re)install all packages. It installs from a
