@@ -31,6 +31,9 @@ __all__ = [
 
            # from profilemanager
            'ProfileManager',
+
+           # from audio
+           'Echonest',
            ]
 
 import sys
@@ -39,10 +42,10 @@ if sys.version_info.major > 2:
     import btts.cliutils
 
 import btts.utils
-import btts.echonest
 
 from btts.adapter import Adapter
 from btts.adaptermanager import AdapterManager
 from btts.device import Device
 from btts.devicemanager import DeviceManager
 from btts.profilemanager import ProfileManager
+from btts.audio import Echonest

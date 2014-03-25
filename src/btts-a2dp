@@ -144,7 +144,7 @@ class Recorder:
             self._sox = None
             self._parec = None
 
-        duration, code = btts.echonest.codegen(MATCHED_PATH)
+        duration, code = btts.Echonest.codegen(MATCHED_PATH)
 
         if duration < self._duration:
             raise self.RecordTooShortError(duration, self._duration)
@@ -214,7 +214,7 @@ class CommandSetSample:
         with open(SAMPLE_PATH, 'wb') as sample_file:
             os.sendfile(sample_file.fileno(), sys.stdin.buffer.fileno(),
                         None, SAMPLE_MAX_SIZE)
-        code = btts.echonest.codegen(SAMPLE_PATH)[1]
+        code = btts.Echonest.codegen(SAMPLE_PATH)[1]
         with open(SAMPLE_CODE_PATH, 'w') as sample_code_file:
             sample_code_file.write(code)
 
@@ -272,7 +272,7 @@ class CommandAsyncRecordAndVerifyWait:
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
             sample_code = sample_code_file.read()
 
-        ok = btts.echonest.match_code_string(wanted=sample_code,
+        ok = btts.Echonest.match_code_string(wanted=sample_code,
                                              tested=code)
         print(['false', 'true'][ok])
 
@@ -309,9 +309,9 @@ class CommandRecordAndVerify:
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
             sample_code = sample_code_file.read()
 
-        duration, code = btts.echonest.codegen(MATCHED_PATH)
+        duration, code = btts.Echonest.codegen(MATCHED_PATH)
 
-        ok = btts.echonest.match_code_string(wanted=sample_code,
+        ok = btts.Echonest.match_code_string(wanted=sample_code,
                                              tested=code)
         print(['false', 'true'][ok])
 
@@ -340,9 +340,9 @@ class CommandVerify:
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
             sample_code = sample_code_file.read()
 
-        code = btts.echonest.codegen(MATCHED_PATH)[1]
+        code = btts.Echonest.codegen(MATCHED_PATH)[1]
 
-        ok = btts.echonest.match_code_string(wanted=sample_code,
+        ok = btts.Echonest.match_code_string(wanted=sample_code,
                                              tested=code)
         print(['false', 'true'][ok])
 
