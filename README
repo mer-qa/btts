@@ -98,9 +98,26 @@ Confirm pairing
   NoCall
   (guest)$ btts pairing state
   succeeded
+  (guest)$ btts device trusted true
 
 Reset pairing tool to its initial state
 
   (guest)$ btts pairing reset
   (guest)$ btts pairing state
   initial
+
+Enable A2DP profile
+
+  (guest)$ btts a2dp enabled true
+      (Now establish audio connection on the device being tested)
+
+Set sample sound to test with
+
+  (guest)$ btts a2dp set-sample < ./song.ogg
+
+Record and match audio received via A2DP from the device being tested
+
+  (guest)$ btts a2dp async-record-and-verify
+      (Now start playing the song on the device being tested)
+  (guest)$ btts a2dp async-record-and-verify-wait
+  true
