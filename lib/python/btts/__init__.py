@@ -34,6 +34,7 @@ __all__ = [
 
            # from audio
            'Echonest',
+           'Recorder',
            ]
 
 import sys
@@ -48,4 +49,4 @@ from btts.adaptermanager import AdapterManager
 from btts.device import Device
 from btts.devicemanager import DeviceManager
 from btts.profilemanager import ProfileManager
-from btts.audio import Echonest
+from btts.audio import Echonest, Recorder

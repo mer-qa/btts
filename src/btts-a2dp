@@ -21,9 +21,7 @@ import argparse
 import dbus
 import dbus.mainloop.glib
 from   gi.repository import GObject
-import logging
 import os
-import subprocess
 import sys
 import time
 
@@ -31,136 +29,24 @@ import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
 from   btts.utils import dbus_service_method, dbus_service_signal
 
-log = logging.getLogger(__name__)
-
 SAMPLE_PATH = '/tmp/btts-a2dp-sample'
 SAMPLE_CODE_PATH = '/tmp/btts-a2dp-sample.code'
 SAMPLE_MAX_SIZE = 50 << 20 # Bytes
 MATCHED_PATH = '/tmp/btts-a2dp-match.wav'
 
-REASONABLE_RECORD_WAIT_TIME = 30 # seconds; keep in sync with doc
-REASONABLE_TERMINATE_TIME = 5 # seconds
-
 SERVER_BUS_NAME = 'org.merproject.btts.A2dpTool'
 SERVER_PATH = '/org/merproject/btts/A2dpTool'
 SERVER_INTERFACE = 'org.merproject.btts.A2dpTool'
-SERVER_ERROR_NAME = 'org.merproject.btts.A2dpTool.Error'
-
-class Recorder:
-    class Error(Exception):
-        _dbus_error_name = SERVER_ERROR_NAME
-
-    class NotReadyError(Error):
-        def __init__(self):
-            Recorder.Error.__init__(self, 'Not ready')
-
-    class NotStartedError(Error):
-        def __init__(self):
-            Recorder.Error.__init__(self, 'Operation not started')
-
-    class RecordTooShortError(Error):
-        def __init__(self, actual_duration, expected_duration):
-            Recorder.Error.__init__(self, ('The duration of the recorded '
-                                           'audio (%dsecs) is shorter than '
-                                           'expected (%dsecs)')
-                                          % (actual_duration, expected_duration))
-
-    def __init__(self):
-        self._parec = None
-        self._sox = None
-
-    def _ensure_ready(self):
-        profile_manager = btts.ProfileManager()
-        ready = profile_manager.get_profiles_state()['a2dp']
-        if not ready:
-            raise self.NotReadyError()
-
-    def start(self, duration):
-        self._ensure_ready()
-
-        if self._sox != None:
-            log.info('Recording in progress. Restarting!')
-            self._sox.terminate()
-            try:
-                self._sox.wait(timeout=REASONABLE_TERMINATE_TIME)
-                self._parec.wait(timeout=REASONABLE_TERMINATE_TIME)
-            except subprocess.TimeoutExpired:
-                log.warning('Recording pipeline refused to terminate. Will be killed.')
-                self._sox.kill()
-                self._parec.kill()
-            finally:
-                self._sox = None
-                self._parec = None
-
-        device_manager = btts.DeviceManager()
-        device_address = device_manager.device_address.upper().replace(':', '_')
-
-        # Notes:
-        # 1. Not using `sox -t pulseaudio <pa_dev>` as SoX uses pa_simple which
-        # connects streams with PA_STREAM_INTERPOLATE_TIMING.
-        # 2. Regarding the use of the 'AU' format see
-        # http://www.mega-nerd.com/libsndfile/FAQ.html#Q017
-        parec_cmd = ('parec --device bluez_source.%s --file-format=au'
-                     % (device_address)).split()
-        sox_cmd = ('sox -q -t au - %s silence 1 0.5 0.1%% trim 0 %d'
-                   % (MATCHED_PATH, duration)).split()
-
-        self._parec = subprocess.Popen(parec_cmd, stdout=subprocess.PIPE)
-        self._sox = subprocess.Popen(sox_cmd, stdin=self._parec.stdout)
-        self._parec.stdout.close()
-
-        self._start_time = time.monotonic()
-        self._duration = duration
-
-    def wait(self):
-        self._ensure_ready()
-
-        if self._sox == None:
-            raise self.NotStartedError()
-
-        total_wait_time = self._duration + REASONABLE_RECORD_WAIT_TIME
-        elapsed_wait_time = time.monotonic() - self._start_time
-        remaining = total_wait_time - elapsed_wait_time
-
-        if remaining < 0:
-            log.warning(('Called too late - have been recording for longer '
-                         '(%dsecs) than the required duration (%dsecs).')
-                        % (elapsed_wait_time, self._duration))
-            remaining = 0
-
-        try:
-            self._sox.wait(timeout=remaining)
-        except subprocess.TimeoutExpired:
-            self._sox.terminate()
-
-        try:
-            self._sox.wait(timeout=REASONABLE_TERMINATE_TIME)
-            self._parec.wait(timeout=REASONABLE_TERMINATE_TIME)
-        except subprocess.TimeoutExpired:
-            self._sox.kill()
-            self._parec.kill()
-            raise btts.cliutils.Failure('Recording pipeline refused to terminate')
-        finally:
-            self._sox = None
-            self._parec = None
-
-        duration, code = btts.Echonest.codegen(MATCHED_PATH)
-
-        if duration < self._duration:
-            raise self.RecordTooShortError(duration, self._duration)
-
-        return (duration, code)
-
 
 class Server(dbus.service.Object):
     def __init__(self, bus, path):
         dbus.service.Object.__init__(self, bus, path)
-        self._recorder = Recorder()
+        self._recorder = btts.Recorder()
 
     @dbus_service_method(SERVER_INTERFACE,
                          in_signature="i", out_signature="")
     def StartRecord(self, duration):
-        self._recorder.start(duration)
+        self._recorder.start(MATCHED_PATH, duration)
 
     @dbus_service_method(SERVER_INTERFACE,
                          in_signature="", out_signature="is")
@@ -239,7 +125,7 @@ class CommandAsyncRecordAndVerify:
                             help='Record duration [secs]')
         parser.set_defaults(handler=self)
 
-    @failure_on([Recorder.Error])
+    @failure_on([btts.Recorder.Error])
     def __call__(self, server, args):
         server.StartRecord(args.duration)
 
@@ -265,7 +151,7 @@ class CommandAsyncRecordAndVerifyWait:
                 description=self.__doc__)
         parser.set_defaults(handler=self)
 
-    @failure_on([Recorder.Error])
+    @failure_on([btts.Recorder.Error])
     def __call__(self, server, args):
         duration, code = server.WaitRecord()
 
@@ -300,10 +186,10 @@ class CommandRecordAndVerify:
                             help='Record duration [secs]')
         parser.set_defaults(handler=self)
 
-    @failure_on([Recorder.Error])
+    @failure_on([btts.Recorder.Error])
     def __call__(self, server, args):
-        recorder = Recorder()
-        recorder.start(args.duration)
+        recorder = btts.Recorder()
+        recorder.start(MATCHED_PATH, args.duration)
         duration, code = recorder.wait()
 
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
