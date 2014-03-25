@@ -23,7 +23,6 @@ import dbus.mainloop.glib
 from   gi.repository import GObject
 import os
 import sys
-import time
 
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
@@ -49,9 +48,9 @@ class Server(dbus.service.Object):
         self._recorder.start(MATCHED_PATH, duration)
 
     @dbus_service_method(SERVER_INTERFACE,
-                         in_signature="", out_signature="is")
+                         in_signature="", out_signature="")
     def WaitRecord(self):
-        return self._recorder.wait()
+        self._recorder.wait()
 
 class CommandEnabled:
     '''\
@@ -100,7 +99,7 @@ class CommandSetSample:
         with open(SAMPLE_PATH, 'wb') as sample_file:
             os.sendfile(sample_file.fileno(), sys.stdin.buffer.fileno(),
                         None, SAMPLE_MAX_SIZE)
-        code = btts.Echonest.codegen(SAMPLE_PATH)[1]
+        code = btts.Echonest.codegen(SAMPLE_PATH)
         with open(SAMPLE_CODE_PATH, 'w') as sample_code_file:
             sample_code_file.write(code)
 
@@ -153,10 +152,12 @@ class CommandAsyncRecordAndVerifyWait:
 
     @failure_on([btts.Recorder.Error])
     def __call__(self, server, args):
-        duration, code = server.WaitRecord()
+        server.WaitRecord()
 
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
             sample_code = sample_code_file.read()
+
+        code = btts.Echonest.codegen(MATCHED_PATH)
 
         ok = btts.Echonest.match_code_string(wanted=sample_code,
                                              tested=code)
@@ -190,12 +191,12 @@ class CommandRecordAndVerify:
     def __call__(self, server, args):
         recorder = btts.Recorder()
         recorder.start(MATCHED_PATH, args.duration)
-        duration, code = recorder.wait()
+        recorder.wait()
 
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
             sample_code = sample_code_file.read()
 
-        duration, code = btts.Echonest.codegen(MATCHED_PATH)
+        code = btts.Echonest.codegen(MATCHED_PATH)
 
         ok = btts.Echonest.match_code_string(wanted=sample_code,
                                              tested=code)
@@ -226,7 +227,7 @@ class CommandVerify:
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
             sample_code = sample_code_file.read()
 
-        code = btts.Echonest.codegen(MATCHED_PATH)[1]
+        code = btts.Echonest.codegen(MATCHED_PATH)
 
         ok = btts.Echonest.match_code_string(wanted=sample_code,
                                              tested=code)

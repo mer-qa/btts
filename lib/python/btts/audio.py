@@ -61,10 +61,7 @@ class Echonest:
         data = json.loads(out.decode('utf-8'))
         code = data[0]['code']
 
-        duration = subprocess.check_output(['soxi', '-D', file_path])
-        duration = math.floor(float(duration))
-
-        return (duration, code)
+        return code
 
 class Recorder:
     _REASONABLE_RECORD_WAIT_TIME = 30 # seconds; keep in sync with doc
@@ -168,9 +165,8 @@ class Recorder:
             self._sox = None
             self._parec = None
 
-        duration, code = Echonest.codegen(self._ofile)
+        duration = subprocess.check_output(['soxi', '-D', self._ofile])
+        duration = math.floor(float(duration))
 
         if duration < self._duration:
             raise self.RecordTooShortError(duration, self._duration)
-
-        return (duration, code)
