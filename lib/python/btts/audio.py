@@ -90,7 +90,7 @@ class Recorder:
 
     def _ensure_ready(self):
         profile_manager = btts.ProfileManager()
-        ready = profile_manager.get_profiles_state()['a2dp']
+        ready = any(profile_manager.get_profiles_state(profiles=['a2dp', 'hfp']))
         if not ready:
             raise self.NotReadyError()
 
@@ -141,13 +141,7 @@ class Recorder:
 
         total_wait_time = self._duration + self._REASONABLE_RECORD_WAIT_TIME
         elapsed_wait_time = time.monotonic() - self._start_time
-        remaining = total_wait_time - elapsed_wait_time
-
-        if remaining < 0:
-            log.warning(('Called too late - have been recording for longer '
-                         '(%dsecs) than the required duration (%dsecs).')
-                        % (elapsed_wait_time, self._duration))
-            remaining = 0
+        remaining = max(0, total_wait_time - elapsed_wait_time)
 
         try:
             self._sox.wait(timeout=remaining)
@@ -170,3 +164,82 @@ class Recorder:
 
         if duration < self._duration:
             raise self.RecordTooShortError(duration, self._duration)
+
+class Player:
+    _REASONABLE_PLAY_BACK_WAIT_TIME = 5 # seconds
+
+    class Error(Exception):
+        _dbus_error_name = 'org.merproject.btts.Player.Error'
+
+    class NotReadyError(Error):
+        def __init__(self):
+            Player.Error.__init__(self, 'Not ready')
+
+    class NotStartedError(Error):
+        def __init__(self):
+            Player.Error.__init__(self, 'Operation not started')
+
+    def __init__(self):
+        self._sox = None
+        self._paplay = None
+
+    def _ensure_ready(self):
+        profile_manager = btts.ProfileManager()
+        ready = profile_manager.get_profiles_state()['hfp']
+        if not ready:
+            raise self.NotReadyError()
+
+    def start(self, ifile, duration):
+        self._ensure_ready()
+
+        if self._sox != None:
+            log.info('Playback in progress. Restarting!')
+            self._sox.terminate()
+            try:
+                self._sox.wait(timeout=_REASONABLE_TERMINATE_TIME)
+                self._paplay.wait(timeout=_REASONABLE_TERMINATE_TIME)
+            except subprocess.TimeoutExpired:
+                log.warning('Playback pipeline refused to terminate. Will be killed.')
+                self._sox.kill()
+                self._paplay.kill()
+            finally:
+                self._sox = None
+                self._paplay = None
+
+        sox_cmd = ('sox -q %s -t au - trim 0 %d' % (ifile, duration)).split()
+        pacat_cmd = ('pacat --device btts_inject --file-format=au').split()
+
+        self._sox = subprocess.Popen(sox_cmd, stdout=subprocess.PIPE)
+        self._pacat = subprocess.Popen(pacat_cmd, stdin=self._sox.stdout)
+        self._sox.stdout.close()
+
+        self._start_time = time.monotonic()
+        self._duration = duration
+
+        self._ifile = ifile
+
+    def wait(self):
+        self._ensure_ready()
+
+        if self._sox == None:
+            raise self.NotStartedError()
+
+        total_wait_time = self._duration + self._REASONABLE_PLAY_BACK_WAIT_TIME
+        elapsed_wait_time = time.monotonic() - self._start_time
+        remaining = max(0, total_wait_time - elapsed_wait_time)
+
+        try:
+            self._sox.wait(timeout=remaining)
+        except subprocess.TimeoutExpired:
+            self._sox.terminate()
+
+        try:
+            self._sox.wait(timeout=_REASONABLE_TERMINATE_TIME)
+            self._pacat.wait(timeout=_REASONABLE_TERMINATE_TIME)
+        except subprocess.TimeoutExpired:
+            self._sox.kill()
+            self._pacat.kill()
+            raise btts.cliutils.Failure('Playback pipeline refused to terminate')
+        finally:
+            self._sox = None
+            self._pacat = None

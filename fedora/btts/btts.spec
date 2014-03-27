@@ -73,6 +73,7 @@ make install DESTDIR=%{buildroot}
 %{_unitdir}/btts-bluez-pairing-tool.service
 %{_unitdir}/btts-a2dp-tool.service
 %{_unitdir}/btts-dbus.service
+%{_unitdir}/btts-hfp-tool.service
 %{_unitdir}/btts-pulseaudio.service
 %{_unitdir}/btts.target
 %config %{_sysconfdir}/dbus-1/system.d/btts.conf

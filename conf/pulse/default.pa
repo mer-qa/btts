@@ -32,6 +32,7 @@ load-module module-switch-on-port-available
 #load-module module-oss device="/dev/dsp" sink_name=output source_name=input
 #load-module module-oss-mmap device="/dev/dsp" sink_name=output source_name=input
 load-module module-null-sink sink_name=btts_null
+load-module module-null-sink sink_name=btts_inject
 #load-module module-pipe-sink
 
 #### Automatically load driver modules depending on the hardware available
@@ -151,4 +152,4 @@ load-module module-filter-apply
 
 ### Make some devices default
 set-default-sink btts_null
-#set-default-source input
+set-default-source btts_inject.monitor

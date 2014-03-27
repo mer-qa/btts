@@ -65,6 +65,7 @@ install:
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-bluez-agent.service
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-bluez-pairing-tool.service
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-a2dp-tool.service
+	$(INSTALL_SYSTEMD_UNIT) systemd/btts-hfp-tool.service
 
 	$(INSTALL_DIR) $(TMPFILES_D_DIR)
 	$(INSTALL_TMPFILES_D_CONFIG) systemd/tmpfiles.d/btts.conf

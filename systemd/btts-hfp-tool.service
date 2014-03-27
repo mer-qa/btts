@@ -1,0 +1,14 @@
+[Unit]
+Description=Bluetooth test suite - HFP tool
+After=bluetooth.service
+StopWhenUnneeded=True
+
+[Service]
+Type=dbus
+BusName=org.merproject.btts.HfpTool
+ExecStart=/usr/bin/btts hfp --server
+EnvironmentFile=/usr/libexec/btts/environment
+User=btts
+
+[Install]
+RequiredBy=btts.target
