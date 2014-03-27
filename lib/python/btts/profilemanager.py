@@ -49,14 +49,16 @@ class ProfileManager:
                 manager_object, "org.freedesktop.systemd1.Manager")
         self._job = None
 
-    def get_profiles_state(self):
-        profiles = {}
+    def get_profiles_state(self, profiles=[]):
+        states = {}
         for profile, unit_name in self._unit_by_bt_profile.items():
+            if profiles and profile not in profiles:
+                continue
             unit_properties = self._get_unit_properties(unit_name)
             active_state = unit_properties.Get('org.freedesktop.systemd1.Unit',
                                                'ActiveState')
-            profiles[profile] = active_state == 'active'
-        return profiles
+            states[profile] = active_state == 'active'
+        return states
 
     def enable_profile(self, profile, enable=True):
         assert not self._job
