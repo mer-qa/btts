@@ -21,7 +21,6 @@ import argparse
 import dbus
 import dbus.mainloop.glib
 from   gi.repository import GObject
-import os
 import sys
 
 import btts
@@ -100,8 +99,8 @@ class CommandSetSample:
 
     def __call__(self, server, args):
         with open(SAMPLE_PATH, 'wb') as sample_file:
-            os.sendfile(sample_file.fileno(), sys.stdin.buffer.fileno(),
-                        None, SAMPLE_MAX_SIZE)
+            btts.utils.sendfile(sample_file, sys.stdin.buffer, SAMPLE_MAX_SIZE)
+
         code = btts.Echonest.codegen(SAMPLE_PATH)
         with open(SAMPLE_CODE_PATH, 'w') as sample_code_file:
             sample_code_file.write(code)

@@ -20,6 +20,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from functools import wraps
 import dbus.service
+import io
 import logging
 import sys
 
@@ -75,6 +76,20 @@ def signal(func):
         def disconnect(self, slot):
             self.slots.remove(slot)
     return Signal()
+
+def sendfile(ofile, ifile, max_size):
+    to_write = max_size
+    while True:
+        to_read = min(io.DEFAULT_BUFFER_SIZE, to_write)
+        if to_read == 0:
+            break
+
+        b = ifile.read(to_read)
+        if not b:
+            break
+
+        ofile.write(b)
+        to_write -= len(b)
 
 if __name__ == '__main__':
     def test_signal():
