@@ -32,6 +32,7 @@ import btts
 from   btts.utils import dbus_service_method, dbus_service_signal
 
 log = logging.getLogger(__name__)
+log.addHandler(logging.StreamHandler())
 
 BUS_NAME = 'org.bluez'
 AGENT_INTERFACE = 'org.bluez.Agent1'
