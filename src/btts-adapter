@@ -105,7 +105,7 @@ class CommandHasFeature:
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
         parser.add_argument('feature', type=str,
-                            choices=btts.Adapter.FEATURES.keys(),
+                            choices=btts.Adapter.FEATURES,
                             help='Feature to test for.')
         parser.set_defaults(handler=self)
 

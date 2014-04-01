@@ -25,9 +25,9 @@ import sys
 import btts
 
 class Adapter:
-    FEATURES = {
-            'simple pairing': 0x00000000000800,
-            }
+    FEATURES = [
+            'simple pairing',
+            ]
 
     def __init__(self):
         self.adapter_manager = btts.AdapterManager()
@@ -65,10 +65,10 @@ class Adapter:
         return self._properties_iface.Get('org.bluez.Adapter1', 'Address')
 
     def has_feature(self, feature):
-        mask = self.FEATURES[feature]
         name = self.adapter_manager.get_adapter_no_alias()
-        with open('/sys/class/bluetooth/%s/features' % (name), 'r') as features:
-            return bool(int(features.read(), 16) & mask)
+        hciconfig = ['hciconfig', name, 'features']
+        features = subprocess.check_output(hciconfig, universal_newlines = True)
+        return ''.join(['<', feature, '>']) in features
 
     @property
     def powered(self):
