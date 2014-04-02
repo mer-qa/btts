@@ -31,6 +31,11 @@ log = logging.getLogger(__name__)
 
 _REASONABLE_TERMINATE_TIME = 5 # seconds
 
+_pa_profile_by_bt_profile = {
+    'hfp' : 'headset_audio_gateway',
+    'a2dp': 'a2dp_source',
+}
+
 # TODO: error handling
 class Echonest:
     _MIN_CODE_LEN = 10
@@ -94,7 +99,9 @@ class Recorder:
         if not ready:
             raise self.NotReadyError()
 
-    def start(self, ofile, duration):
+    def start(self, ofile, profile, duration):
+        assert profile in _pa_profile_by_bt_profile.keys()
+
         self._ensure_ready()
 
         if self._sox != None:
@@ -113,6 +120,18 @@ class Recorder:
 
         device_manager = btts.DeviceManager()
         device_address = device_manager.device_address.upper().replace(':', '_')
+
+        pa_profile = _pa_profile_by_bt_profile[profile]
+
+        # Card profile must be switched before parec is started, otherwise it
+        # would get reconnected to default source upon playback-started profile
+        # change.
+        set_card_profile_cmd = ('pactl set-card-profile bluez_card.%s %s'
+                                % (device_address, pa_profile)).split()
+        try:
+            subprocess.check_call(set_card_profile_cmd)
+        except subprocess.CalledProcessError as e:
+            raise self.Error('Failed to set card profile: pactl failed')
 
         # Notes:
         # 1. Not using `sox -t pulseaudio <pa_dev>` as SoX uses pa_simple which

@@ -44,7 +44,7 @@ class Server(dbus.service.Object):
     @dbus_service_method(SERVER_INTERFACE,
                          in_signature="i", out_signature="")
     def StartRecord(self, duration):
-        self._recorder.start(MATCHED_PATH, duration)
+        self._recorder.start(MATCHED_PATH, 'a2dp', duration)
 
     @dbus_service_method(SERVER_INTERFACE,
                          in_signature="", out_signature="")
@@ -189,7 +189,7 @@ class CommandRecordAndVerify:
     @failure_on([btts.Recorder.Error])
     def __call__(self, server, args):
         recorder = btts.Recorder()
-        recorder.start(MATCHED_PATH, args.duration)
+        recorder.start(MATCHED_PATH, 'a2dp', args.duration)
         recorder.wait()
 
         with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
