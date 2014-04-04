@@ -129,7 +129,7 @@ class Recorder:
 
         if self._sox != None:
             log.info('Recording in progress. Restarting!')
-            self._sox.terminate()
+            self._parec.terminate()
             try:
                 self._sox.wait(timeout=_REASONABLE_TERMINATE_TIME)
                 self._parec.wait(timeout=_REASONABLE_TERMINATE_TIME)
@@ -193,7 +193,7 @@ class Recorder:
         try:
             self._sox.wait(timeout=remaining)
         except subprocess.TimeoutExpired:
-            self._sox.terminate()
+            self._parec.terminate()
 
         try:
             self._sox.wait(timeout=_REASONABLE_TERMINATE_TIME)
@@ -292,7 +292,7 @@ class Player:
         remaining = max(0, total_wait_time - elapsed_wait_time)
 
         try:
-            self._sox.wait(timeout=remaining)
+            self._pacat.wait(timeout=remaining)
         except subprocess.TimeoutExpired:
             self._sox.terminate()
 
