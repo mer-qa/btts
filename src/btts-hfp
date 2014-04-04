@@ -137,11 +137,10 @@ class CommandAsyncPlayBackAndVerifyEcho:
 
 class CommandAsyncPlayBackAndVerifyEchoWait:
     '''\
-    Match the asynchronously recorded echo against the played back sample.
+    Wait for async-play-back-and-verify-echo to complete and print its result.
 
     This command blocks until the asynchronous procedure started with
-    `async-play-back-and-verify-echo` finishes and then matches the recorded audio
-    against the played back sample.
+    `async-play-back-and-verify-echo` finishes and prints its result.
 
     Prints "true" or "false" to indicate if the recorded echo matches the
     played back sample.
@@ -152,7 +151,7 @@ class CommandAsyncPlayBackAndVerifyEchoWait:
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'async-play-back-and-verify-echo-wait',
-                help='Match the asynchronously recorded echo against the played back sample',
+                help='Wait for async-play-back-and-verify-echo to complete and print its result',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
         parser.set_defaults(handler=self)

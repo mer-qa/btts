@@ -132,11 +132,10 @@ class CommandAsyncRecordAndVerify:
 
 class CommandAsyncRecordAndVerifyWait:
     '''\
-    Match the asynchronously recorded audio against the stored sample.
+    Wait for async-record-and-verify to complete and print its result.
 
     This command blocks until the asynchronous procedure started with
-    `async-record-and-verify` finishes and then matches the recorded audio
-    against the stored sample.
+    `async-record-and-verify` finishes and prints its result.
 
     Prints "true" or "false" to indicate if the recorded audio matches the
     stored sample.
@@ -147,7 +146,7 @@ class CommandAsyncRecordAndVerifyWait:
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'async-record-and-verify-wait',
-                help='Match the asynchronously recorded audio against the stored sample',
+                help='Wait for async-record-and-verify to complete and print its result',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
         parser.set_defaults(handler=self)
