@@ -19,6 +19,7 @@ Requires:	python3
 Requires:	python3-dbus
 Requires:	python3-gobject
 Requires:	sox
+Requires:	minimodem
 BuildRequires:	python2-devel
 Requires(pre): shadow-utils
 

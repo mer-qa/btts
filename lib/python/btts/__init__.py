@@ -34,6 +34,7 @@ __all__ = [
 
            # from audio
            'Echonest',
+           'Minimodem',
            'Player',
            'Recorder',
            ]
@@ -50,4 +51,4 @@ from btts.adaptermanager import AdapterManager
 from btts.device import Device
 from btts.devicemanager import DeviceManager
 from btts.profilemanager import ProfileManager
-from btts.audio import Echonest, Player, Recorder
+from btts.audio import Echonest, Minimodem, Player, Recorder

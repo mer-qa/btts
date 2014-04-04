@@ -73,6 +73,25 @@ class Echonest:
 
         return code
 
+class Minimodem:
+    _BAUDMODE = '2'
+    _REASONABLE_TIMEOUT = 10
+
+    @staticmethod
+    def write(message, file_path):
+        cmd = ['minimodem', '--tx', '--file', file_path, Minimodem._BAUDMODE]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                                universal_newlines=True)
+        proc.communicate(input=message, timeout=Minimodem._REASONABLE_TIMEOUT)
+
+    @staticmethod
+    def read(file_path):
+        cmd = ['minimodem', '--rx', '--file', file_path, Minimodem._BAUDMODE]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                universal_newlines=True)
+        outs, errs = proc.communicate(timeout=Minimodem._REASONABLE_TIMEOUT)
+        return outs
+
 class Recorder:
     class Error(Exception):
         _dbus_error_name = 'org.merproject.btts.Recorder.Error'
@@ -102,7 +121,7 @@ class Recorder:
         if not ready:
             raise self.NotReadyError()
 
-    def start(self, ofile, profile, duration = 0, start_padding=0):
+    def start(self, ofile, profile, duration = 0, start_padding=0, mono=False):
         assert profile in _pa_profile_by_bt_profile.keys()
         assert duration >= 0
 
@@ -148,6 +167,8 @@ class Recorder:
                    % (ofile)).split()
         if duration > 0:
             sox_cmd += ('trim 0 %d' % (duration)).split()
+        if mono:
+            sox_cmd += ('remix -').split()
 
         self._parec = subprocess.Popen(parec_cmd, stdout=subprocess.PIPE)
         self._sox = subprocess.Popen(sox_cmd, stdin=self._parec.stdout)

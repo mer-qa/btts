@@ -27,9 +27,8 @@ import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
 from   btts.utils import dbus_service_method, dbus_service_signal
 
-SAMPLE_PATH = '/tmp/btts-hfp-sample'
-SAMPLE_CODE_PATH = '/tmp/btts-hfp-sample.code'
-SAMPLE_MAX_SIZE = 50 << 20 # Bytes
+SAMPLE_MESSAGE = 'BTTS'
+SAMPLE_PATH = '/tmp/btts-hfp-sample.wav'
 ECHO_PATH = '/tmp/btts-hfp-echo.wav'
 
 SERVER_BUS_NAME = 'org.merproject.btts.HfpTool'
@@ -45,11 +44,12 @@ class Server(dbus.service.Object):
         self._recorder = btts.Recorder()
 
     @dbus_service_method(SERVER_INTERFACE,
-                         in_signature="i", out_signature="")
-    def StartPlayBackAndRecord(self, duration):
-        self._recorder.start(ECHO_PATH, 'hfp', duration,
-                             REASONABLE_RECORD_START_PADDING)
-        self._player.start(SAMPLE_PATH, duration)
+                         in_signature="", out_signature="")
+    def StartPlayBackAndRecord(self):
+        self._recorder.start(ECHO_PATH, 'hfp', duration=0,
+                             start_padding=REASONABLE_RECORD_START_PADDING,
+                             mono=True)
+        self._player.start(SAMPLE_PATH)
 
     @dbus_service_method(SERVER_INTERFACE,
                          in_signature="", out_signature="")
@@ -85,38 +85,14 @@ class CommandEnabled:
         else:
             profile_manager.enable_profile('hfp', args.enabled)
 
-class CommandSetSample:
-    '''\
-    Set audio sample for HFP testing.
-
-    The audio sample is read from stdin.
-    '''
-
-    def __init__(self, subparsers):
-        parser = subparsers.add_parser(
-                'set-sample',
-                help='Set audio sample for HFP testing',
-                formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
-        parser.set_defaults(handler=self)
-
-    def __call__(self, server, args):
-        with open(SAMPLE_PATH, 'wb') as sample_file:
-            btts.utils.sendfile(sample_file, sys.stdin.buffer, SAMPLE_MAX_SIZE)
-
-        code = btts.Echonest.codegen(SAMPLE_PATH)
-        with open(SAMPLE_CODE_PATH, 'w') as sample_code_file:
-            sample_code_file.write(code)
-
 class CommandAsyncPlayBackAndVerifyEcho:
     '''\
-    Asynchronously play back the stored sample and match it with the echo.
+    Asynchronously play back an audio sample and match it with the echo.
 
     Assuming the HFP gateway has dialed an "echo service", it starts playing
-    back the audio sample stored with `set-sample` command and simultaneously
-    recording the echo. It will try to record exactly `duration' seconds of
-    received audio data within `duration' + 30 seconds. Recorded echo will be
-    matched against the played back sample.
+    back an audio sample -- a signal modulated using the Minimodem tool,
+    encoding a text message -- and simultaneously recording the echo.  Recorded
+    echo will be decoded and matched against the original text message.
 
     Use `async-play-back-and-verify-echo-wait` to query the result.
     '''
@@ -124,16 +100,15 @@ class CommandAsyncPlayBackAndVerifyEcho:
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'async-play-back-and-verify-echo',
-                help='Asynchronously play back the stored sample and match it with the echo',
+                help='Asynchronously play back an audio sample and match it with the echo',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
-        parser.add_argument('duration', nargs='?', type=int, default=20,
-                            help='Record duration [secs]')
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Player.Error, btts.Recorder.Error])
     def __call__(self, server, args):
-        server.StartPlayBackAndRecord(args.duration)
+        btts.Minimodem.write(SAMPLE_MESSAGE, SAMPLE_PATH)
+        server.StartPlayBackAndRecord()
 
 class CommandAsyncPlayBackAndVerifyEchoWait:
     '''\
@@ -144,8 +119,6 @@ class CommandAsyncPlayBackAndVerifyEchoWait:
 
     Prints "true" or "false" to indicate if the recorded echo matches the
     played back sample.
-
-    Exits with non zero when echo of the given duration could not be recorded.
     '''
 
     def __init__(self, subparsers):
@@ -160,14 +133,9 @@ class CommandAsyncPlayBackAndVerifyEchoWait:
     def __call__(self, server, args):
         server.WaitPlayBackAndRecord()
 
-        with open(SAMPLE_CODE_PATH, 'r') as sample_code_file:
-            sample_code = sample_code_file.read()
+        message = btts.Minimodem.read(ECHO_PATH)
 
-        code = btts.Echonest.codegen(ECHO_PATH)
-
-        ok = btts.Echonest.match_code_string(wanted=sample_code,
-                                             tested=code)
-        print(['false', 'true'][ok])
+        print(['false', 'true'][message.strip() == SAMPLE_MESSAGE])
 
 # Main argument parser
 main_parser = argparse.ArgumentParser(
@@ -179,7 +147,6 @@ subparsers = main_parser.add_subparsers(
             on the given subcommand.''')
 
 CommandEnabled(subparsers)
-CommandSetSample(subparsers)
 CommandAsyncPlayBackAndVerifyEcho(subparsers)
 CommandAsyncPlayBackAndVerifyEchoWait(subparsers)
 
