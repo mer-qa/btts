@@ -36,6 +36,11 @@ _pa_profile_by_bt_profile = {
     'a2dp': 'a2dp_source',
 }
 
+def _duration(file_path):
+    duration = subprocess.check_output(['soxi', '-D', file_path])
+    duration = math.floor(float(duration))
+    return duration
+
 # TODO: error handling
 class Echonest:
     _MIN_CODE_LEN = 10
@@ -99,8 +104,9 @@ class Recorder:
         if not ready:
             raise self.NotReadyError()
 
-    def start(self, ofile, profile, duration):
+    def start(self, ofile, profile, duration = 0):
         assert profile in _pa_profile_by_bt_profile.keys()
+        assert duration >= 0
 
         self._ensure_ready()
 
@@ -140,8 +146,10 @@ class Recorder:
         # http://www.mega-nerd.com/libsndfile/FAQ.html#Q017
         parec_cmd = ('parec --device bluez_source.%s --file-format=au'
                      % (device_address)).split()
-        sox_cmd = ('sox -q -t au - %s silence 1 0.5 0.1%% trim 0 %d'
-                   % (ofile, duration)).split()
+        sox_cmd = ('sox -q -t au - %s silence 1 0.5 0.1%%'
+                   % (ofile)).split()
+        if duration > 0:
+            sox_cmd += ('trim 0 %d' % (duration)).split()
 
         self._parec = subprocess.Popen(parec_cmd, stdout=subprocess.PIPE)
         self._sox = subprocess.Popen(sox_cmd, stdin=self._parec.stdout)
@@ -158,9 +166,9 @@ class Recorder:
         if self._sox == None:
             raise self.NotStartedError()
 
-        total_wait_time = self._duration + self._REASONABLE_RECORD_WAIT_TIME
-        elapsed_wait_time = time.monotonic() - self._start_time
-        remaining = max(0, total_wait_time - elapsed_wait_time)
+        elapsed = time.monotonic() - self._start_time
+        remaining = max(0, self._duration - elapsed)
+        remaining += self._REASONABLE_RECORD_WAIT_TIME
 
         try:
             self._sox.wait(timeout=remaining)
@@ -178,8 +186,7 @@ class Recorder:
             self._sox = None
             self._parec = None
 
-        duration = subprocess.check_output(['soxi', '-D', self._ofile])
-        duration = math.floor(float(duration))
+        duration = _duration(self._ofile)
 
         if duration < self._duration:
             raise self.RecordTooShortError(duration, self._duration)
@@ -208,7 +215,15 @@ class Player:
         if not ready:
             raise self.NotReadyError()
 
-    def start(self, ifile, duration):
+    def start(self, ifile, duration=0):
+        '''
+        Start playing back.
+
+        If 'duration' (seconds) is given, it will limit maximum length to be played back.
+
+        Returns expected play back time.
+        '''
+        assert duration >= 0
         self._ensure_ready()
 
         if self._sox != None:
@@ -225,6 +240,13 @@ class Player:
                 self._sox = None
                 self._paplay = None
 
+        total_duration = _duration(ifile)
+        if total_duration < duration:
+            log.warning('%s: File duration %gs is shorter than requested %gs'
+                        % (ifile, total_duration, duration))
+        if duration == 0:
+            duration = math.ceil(total_duration)
+
         sox_cmd = ('sox -q %s -t au - trim 0 %d' % (ifile, duration)).split()
         pacat_cmd = ('pacat --device btts_inject --file-format=au').split()
 
@@ -236,6 +258,8 @@ class Player:
         self._duration = duration
 
         self._ifile = ifile
+
+        return duration
 
     def wait(self):
         self._ensure_ready()
