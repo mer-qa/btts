@@ -74,8 +74,6 @@ class Echonest:
         return code
 
 class Recorder:
-    _REASONABLE_RECORD_WAIT_TIME = 30 # seconds; keep in sync with doc
-
     class Error(Exception):
         _dbus_error_name = 'org.merproject.btts.Recorder.Error'
 
@@ -104,7 +102,7 @@ class Recorder:
         if not ready:
             raise self.NotReadyError()
 
-    def start(self, ofile, profile, duration = 0):
+    def start(self, ofile, profile, duration = 0, start_padding=0):
         assert profile in _pa_profile_by_bt_profile.keys()
         assert duration >= 0
 
@@ -157,6 +155,7 @@ class Recorder:
 
         self._start_time = time.monotonic()
         self._duration = duration
+        self._start_padding = start_padding
 
         self._ofile = ofile
 
@@ -168,7 +167,7 @@ class Recorder:
 
         elapsed = time.monotonic() - self._start_time
         remaining = max(0, self._duration - elapsed)
-        remaining += self._REASONABLE_RECORD_WAIT_TIME
+        remaining += self._start_padding
 
         try:
             self._sox.wait(timeout=remaining)

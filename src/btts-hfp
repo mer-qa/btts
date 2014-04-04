@@ -36,6 +36,8 @@ SERVER_BUS_NAME = 'org.merproject.btts.HfpTool'
 SERVER_PATH = '/org/merproject/btts/HfpTool'
 SERVER_INTERFACE = 'org.merproject.btts.HfpTool'
 
+REASONABLE_RECORD_START_PADDING = 5 # seconds
+
 class Server(dbus.service.Object):
     def __init__(self, bus, path):
         dbus.service.Object.__init__(self, bus, path)
@@ -45,7 +47,8 @@ class Server(dbus.service.Object):
     @dbus_service_method(SERVER_INTERFACE,
                          in_signature="i", out_signature="")
     def StartPlayBackAndRecord(self, duration):
-        self._recorder.start(ECHO_PATH, 'hfp', duration)
+        self._recorder.start(ECHO_PATH, 'hfp', duration,
+                             REASONABLE_RECORD_START_PADDING)
         self._player.start(SAMPLE_PATH, duration)
 
     @dbus_service_method(SERVER_INTERFACE,
