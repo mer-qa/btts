@@ -40,22 +40,8 @@ REASONABLE_RECORD_START_PADDING = 5 # seconds
 class Server(dbus.service.Object):
     def __init__(self, bus, path):
         dbus.service.Object.__init__(self, bus, path)
-        self._player = btts.Player()
-        self._recorder = btts.Recorder()
 
-    @dbus_service_method(SERVER_INTERFACE,
-                         in_signature="", out_signature="")
-    def StartPlayBackAndRecord(self):
-        self._recorder.start(ECHO_PATH, 'hfp', duration=0,
-                             start_padding=REASONABLE_RECORD_START_PADDING,
-                             mono=True)
-        self._player.start(SAMPLE_PATH)
-
-    @dbus_service_method(SERVER_INTERFACE,
-                         in_signature="", out_signature="")
-    def WaitPlayBackAndRecord(self):
-        self._player.wait()
-        self._recorder.wait()
+    # TODO
 
 class CommandEnabled:
     '''\
@@ -85,37 +71,14 @@ class CommandEnabled:
         else:
             profile_manager.enable_profile('hfp', args.enabled)
 
-class CommandAsyncPlayBackAndVerifyEcho:
+class CommandPlayBackAndVerifyEcho:
     '''\
-    Asynchronously play back an audio sample and match it with the echo.
+    Play back an audio sample and match it with the echo.
 
     Assuming the HFP gateway has dialed an "echo service", it starts playing
     back an audio sample -- a signal modulated using the Minimodem tool,
     encoding a text message -- and simultaneously recording the echo.  Recorded
     echo will be decoded and matched against the original text message.
-
-    Use `async-play-back-and-verify-echo-wait` to query the result.
-    '''
-
-    def __init__(self, subparsers):
-        parser = subparsers.add_parser(
-                'async-play-back-and-verify-echo',
-                help='Asynchronously play back an audio sample and match it with the echo',
-                formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
-        parser.set_defaults(handler=self)
-
-    @failure_on([btts.Player.Error, btts.Recorder.Error])
-    def __call__(self, server, args):
-        btts.Minimodem.write(SAMPLE_MESSAGE, SAMPLE_PATH)
-        server.StartPlayBackAndRecord()
-
-class CommandAsyncPlayBackAndVerifyEchoWait:
-    '''\
-    Wait for async-play-back-and-verify-echo to complete and print its result.
-
-    This command blocks until the asynchronous procedure started with
-    `async-play-back-and-verify-echo` finishes and prints its result.
 
     Prints "true" or "false" to indicate if the recorded echo matches the
     played back sample.
@@ -123,15 +86,25 @@ class CommandAsyncPlayBackAndVerifyEchoWait:
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
-                'async-play-back-and-verify-echo-wait',
-                help='Wait for async-play-back-and-verify-echo to complete and print its result',
+                'play-back-and-verify-echo',
+                help='Play back an audio sample and match it with the echo',
                 formatter_class=argparse.RawDescriptionHelpFormatter,
                 description=self.__doc__)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Player.Error, btts.Recorder.Error])
     def __call__(self, server, args):
-        server.WaitPlayBackAndRecord()
+        btts.Minimodem.write(SAMPLE_MESSAGE, SAMPLE_PATH)
+
+        player = btts.Player()
+        recorder = btts.Recorder()
+
+        recorder.start(ECHO_PATH, 'hfp', duration=0,
+                       start_padding=REASONABLE_RECORD_START_PADDING,
+                       mono=True)
+        player.start(SAMPLE_PATH)
+        player.wait()
+        recorder.wait()
 
         message = btts.Minimodem.read(ECHO_PATH)
 
@@ -147,8 +120,7 @@ subparsers = main_parser.add_subparsers(
             on the given subcommand.''')
 
 CommandEnabled(subparsers)
-CommandAsyncPlayBackAndVerifyEcho(subparsers)
-CommandAsyncPlayBackAndVerifyEchoWait(subparsers)
+CommandPlayBackAndVerifyEcho(subparsers)
 
 main_parser.usage = '%(prog)s --server\n' + main_parser.format_usage()
 
