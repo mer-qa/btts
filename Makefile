@@ -39,6 +39,7 @@ install:
 	$(INSTALL_LIBEXEC_PROG) src/btts-a2dp
 	$(INSTALL_LIBEXEC_PROG) src/btts-adapter
 	$(INSTALL_LIBEXEC_PROG) src/btts-agent
+	$(INSTALL_LIBEXEC_PROG) src/btts-avrcp
 	$(INSTALL_LIBEXEC_PROG) src/btts-config
 	$(INSTALL_LIBEXEC_PROG) src/btts-device
 	$(INSTALL_LIBEXEC_PROG) src/btts-hfp
@@ -52,6 +53,7 @@ install:
 	$(INSTALL_PYTHON_MOD) lib/python/btts/cliutils.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/device.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/devicemanager.py
+	$(INSTALL_PYTHON_MOD) lib/python/btts/mediacontrol.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/profilemanager.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/utils.py
 

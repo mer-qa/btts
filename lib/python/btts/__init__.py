@@ -37,6 +37,9 @@ __all__ = [
            'Minimodem',
            'Player',
            'Recorder',
+
+           # from mediacontrol
+           'MediaControl',
            ]
 
 import sys
@@ -52,3 +55,4 @@ from btts.device import Device
 from btts.devicemanager import DeviceManager
 from btts.profilemanager import ProfileManager
 from btts.audio import Echonest, Minimodem, Player, Recorder
+from btts.mediacontrol import MediaControl

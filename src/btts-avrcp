@@ -1,0 +1,71 @@
+#!/usr/bin/python3
+#
+# BTTS - BlueTooth Test Suite
+#
+# Copyright (C) 2014 Jolla Ltd.
+# Contact: Martin Kampas <martin.kampas@jollamobile.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import dbus
+import dbus.mainloop.glib
+from   gi.repository import GObject
+import sys
+
+import btts
+from   btts.cliutils import failure_on, bad_usage_on, error_handler
+
+class AvrcpCommand:
+    def __init__(self, subparsers, cli, method):
+        parser = subparsers.add_parser(
+                cli,
+                help=('Invoke %s action' % (cli)),
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=('Invoke %s action' % (cli)))
+        parser.set_defaults(handler=self)
+        self._method = method
+
+    @failure_on([btts.Config.Error, btts.Device.Error])
+    def __call__(self, args):
+        getattr(btts.MediaControl(), self._method)()
+
+# Main argument parser
+main_parser = argparse.ArgumentParser(
+        prog='btts avrcp',
+        description='Audio/Video Remote Control Profile controlling utility.')
+subparsers = main_parser.add_subparsers(
+        dest='subcommand', title='subcommands',
+        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
+            on the given subcommand.''')
+
+AvrcpCommand(subparsers, 'play', 'Play')
+AvrcpCommand(subparsers, 'pause', 'Pause')
+AvrcpCommand(subparsers, 'stop', 'Stop')
+AvrcpCommand(subparsers, 'previous', 'Previous')
+AvrcpCommand(subparsers, 'next', 'Next')
+AvrcpCommand(subparsers, 'rewind', 'Rewind')
+AvrcpCommand(subparsers, 'fast-forward', 'FastForward')
+AvrcpCommand(subparsers, 'volume-up', 'VolumeUp')
+AvrcpCommand(subparsers, 'volume-down', 'VolumeDown')
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+bus = dbus.SystemBus()
+
+args = main_parser.parse_args()
+if not args.subcommand:
+    main_parser.print_usage()
+    sys.exit(1)
+
+with error_handler(main_parser):
+    args.handler(args)

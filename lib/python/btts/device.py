@@ -89,6 +89,12 @@ class Device:
     def is_valid_address(address):
         return re.match('^[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}$', address) != None
 
+    # Possibly used by other btts classes
+    @property
+    def _bluez_object(self):
+        self._ensure_available()
+        return self._device_object
+
     def _on_interfaces_added(self, object_path, interfaces_and_properties):
         if self.available:
             return
