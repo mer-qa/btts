@@ -71,6 +71,25 @@ class CommandEnabled:
         else:
             profile_manager.enable_profile('hfp', args.enabled)
 
+class CommandReceivingAudio:
+    '''\
+    Test if receiving audio right now.
+
+    It prints "true" or "false" to indicate current state.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'receiving-audio',
+                help='Test if receiving audio right now',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.Config.Error])
+    def __call__(self, server, args):
+        print(['false', 'true'][btts.Recorder.receiving_audio()])
+
 class CommandPlayBackAndVerifyEcho:
     '''\
     Play back an audio sample and match it with the echo.
@@ -120,6 +139,7 @@ subparsers = main_parser.add_subparsers(
             on the given subcommand.''')
 
 CommandEnabled(subparsers)
+CommandReceivingAudio(subparsers)
 CommandPlayBackAndVerifyEcho(subparsers)
 
 main_parser.usage = '%(prog)s --server\n' + main_parser.format_usage()

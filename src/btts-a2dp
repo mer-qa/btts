@@ -82,6 +82,25 @@ class CommandEnabled:
         else:
             profile_manager.enable_profile('a2dp', args.enabled)
 
+class CommandReceivingAudio:
+    '''\
+    Test if receiving audio right now.
+
+    It prints "true" or "false" to indicate current state.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'receiving-audio',
+                help='Test if receiving audio right now',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.ProfileManager.Error])
+    def __call__(self, server, args):
+        print(['false', 'true'][btts.Recorder.receiving_audio()])
+
 class CommandSetSample:
     '''\
     Set sample to match the recorded/played audio against.
@@ -244,6 +263,7 @@ subparsers = main_parser.add_subparsers(
             on the given subcommand.''')
 
 CommandEnabled(subparsers)
+CommandReceivingAudio(subparsers)
 CommandSetSample(subparsers)
 CommandAsyncRecordAndVerify(subparsers)
 CommandAsyncRecordAndVerifyWait(subparsers)

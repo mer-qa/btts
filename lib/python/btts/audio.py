@@ -121,6 +121,18 @@ class Recorder:
         if not ready:
             raise self.NotReadyError()
 
+    @staticmethod
+    def _device_address_for_pa():
+        device_manager = btts.DeviceManager()
+        return device_manager.device_address.upper().replace(':', '_')
+
+    @staticmethod
+    def receiving_audio():
+        args = ('''pactl list short sources |awk '$2 == "bluez_source.%s" { print $7 }' '''
+                % (Recorder._device_address_for_pa()))
+        out = subprocess.check_output(args, shell=True, universal_newlines=True)
+        return out.strip() == 'RUNNING'
+
     def start(self, ofile, profile, duration = 0, start_padding=0, mono=False):
         assert profile in _pa_profile_by_bt_profile.keys()
         assert duration >= 0
@@ -141,16 +153,13 @@ class Recorder:
                 self._sox = None
                 self._parec = None
 
-        device_manager = btts.DeviceManager()
-        device_address = device_manager.device_address.upper().replace(':', '_')
-
         pa_profile = _pa_profile_by_bt_profile[profile]
 
         # Card profile must be switched before parec is started, otherwise it
         # would get reconnected to default source upon playback-started profile
         # change.
         set_card_profile_cmd = ('pactl set-card-profile bluez_card.%s %s'
-                                % (device_address, pa_profile)).split()
+                                % (self._device_address_for_pa(), pa_profile)).split()
         try:
             subprocess.check_call(set_card_profile_cmd)
         except subprocess.CalledProcessError as e:
@@ -162,7 +171,7 @@ class Recorder:
         # 2. Regarding the use of the 'AU' format see
         # http://www.mega-nerd.com/libsndfile/FAQ.html#Q017
         parec_cmd = ('parec --device bluez_source.%s --file-format=au'
-                     % (device_address)).split()
+                     % (self._device_address_for_pa())).split()
         sox_cmd = ('sox -q -t au - %s silence 1 0.5 0.1%%'
                    % (ofile)).split()
         if duration > 0:
