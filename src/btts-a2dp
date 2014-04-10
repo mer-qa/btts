@@ -77,10 +77,10 @@ class CommandEnabled:
         config = btts.Config()
 
         if args.enabled == None:
-            state = config.get_profiles_state()['a2dp']
+            state = config.profile_enabled('a2dp')
             print(['false', 'true'][state])
         else:
-            config.enable_profile('a2dp', args.enabled)
+            config.set_profile_enabled('a2dp', args.enabled)
 
 class CommandReceivingAudio:
     '''\

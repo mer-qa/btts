@@ -68,34 +68,43 @@ class Config:
         self._device_manager = Config._DeviceManager()
         self._profile_manager = Config._ProfileManager()
 
-    def get_adapter_no_alias(self):
-        return self._adapter_manager.get_adapter_no_alias()
+    @property
+    def adapter_no_alias(self):
+        return self._adapter_manager.adapter_no_alias()
 
-    def get_adapter(self):
-        return self._adapter_manager.get_adapter()
+    @property
+    def adapter(self):
+        return self._adapter_manager.adapter()
 
-    def set_adapter(self, name_or_alias):
+    @adapter.setter
+    def adapter(self, name_or_alias):
         self._adapter_manager.set_adapter(name_or_alias)
 
-    def get_host_alias(self):
-        return self._adapter_manager.get_host_alias()
+    @property
+    def host_alias(self):
+        return self._adapter_manager.host_alias()
 
-    def set_host_alias(self, host_alias):
+    @host_alias.setter
+    def host_alias(self, host_alias):
         self._adapter_manager.set_host_alias(host_alias)
 
     @property
-    def device_address(self):
-        return self._device_manager.device_address()
+    def device(self):
+        return self._device_manager.device()
 
-    @device_address.setter
-    def set_device_address(self, address):
-        self._device_manager.set_device_address(address)
+    @device.setter
+    def device(self, address):
+        self._device_manager.set_device(address)
 
-    def get_profiles_state(self, profiles=[]):
-        return self._profile_manager.get_profiles_state(profiles)
+    # TODO: rewrite e.g. with MutableMapping?
+    def profile_enabled(self, profile):
+        return self._profile_manager.profiles_enabled([profile])[profile]
 
-    def enable_profile(self, profile, enable=True):
-        self._profile_manager.enable_profile(profile, enable)
+    def profiles_enabled(self, profiles=[]):
+        return self._profile_manager.profiles_enabled(profiles)
+
+    def set_profile_enabled(self, profile, enabled=True):
+        self._profile_manager.set_profile_enabled(profile, enabled)
 
     class _AdapterManager:
         def __init__(self):
@@ -115,7 +124,7 @@ class Config:
                                 (_ADAPTERS_FILE, address))
                     del self._address_by_alias[alias]
 
-        def get_adapter_no_alias(self):
+        def adapter_no_alias(self):
             name = self.settings.get_string("adapter")
             if not name:
                 raise Config.AdapterNotSetError()
@@ -124,8 +133,8 @@ class Config:
                 raise Config.AdapterNotSetError()
             return name
 
-        def get_adapter(self):
-            name = self.get_adapter_no_alias()
+        def adapter(self):
+            name = self.adapter_no_alias()
             address = self._address_by_name[name]
             return self._alias_by_address.get(address, name)
 
@@ -152,11 +161,11 @@ class Config:
             try:
                 adapter = Adapter()
                 adapter.properties_iface.Set('org.bluez.Adapter1', 'Alias',
-                                             self.get_host_alias())
+                                             self.host_alias())
             except Config.AdapterNotSetError:
                 pass
 
-        def get_host_alias(self):
+        def host_alias(self):
             host_alias = self.settings.get_string("host-alias")
             return host_alias
 
@@ -201,13 +210,13 @@ class Config:
         def __init__(self):
             self.settings = Gio.Settings.new(_GSETTINGS_SCHEMA)
 
-        def device_address(self):
+        def device(self):
             address = self.settings.get_string("device").lower()
             if not address:
                 raise Config.DeviceNotSetError()
             return address
 
-        def set_device_address(self, address):
+        def set_device(self, address):
             if not Device.is_valid_address(address):
                 raise Config.InvalidAddressError(address)
 
@@ -231,7 +240,7 @@ class Config:
                     manager_object, "org.freedesktop.systemd1.Manager")
             self._job = None
 
-        def get_profiles_state(self, profiles=[]):
+        def profiles_enabled(self, profiles=[]):
             states = {}
             for profile, unit_name in self._unit_by_bt_profile.items():
                 if profiles and profile not in profiles:
@@ -242,7 +251,7 @@ class Config:
                 states[profile] = active_state == 'active'
             return states
 
-        def enable_profile(self, profile, enable=True):
+        def set_profile_enabled(self, profile, enabled=True):
             assert not self._job
             if not profile in self.valid_profile_names:
                 raise Config.NoSuchProfileError(profile)
@@ -255,7 +264,7 @@ class Config:
             self._systemd_manager.connect_to_signal("JobRemoved",
                                                     self._on_job_removed)
 
-            if enable:
+            if enabled:
                 self._job = unit.Start("replace")
             else:
                 self._job = unit.Stop("replace")

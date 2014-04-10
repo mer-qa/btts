@@ -102,7 +102,7 @@ class Device:
             if object_path.startswith(self._adapter.path):
                 device_properties = interfaces_and_properties.get('org.bluez.Device1')
                 if (device_properties is not None and
-                        device_properties['Address'].lower() == self._config.device_address):
+                        device_properties['Address'].lower() == self._config.device):
                     self._path = object_path
                     bus = dbus.SystemBus()
                     self._device_object = bus.get_object('org.bluez', self._path)

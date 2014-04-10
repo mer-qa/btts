@@ -90,7 +90,7 @@ class PairingTool(dbus.service.Object):
     def Pair(self, hw_address):
         self.Reset()
 
-        adapter = btts.Config().get_adapter_no_alias()
+        adapter = btts.Config().adapter_no_alias
         self.device = bluezutils.find_device(hw_address.upper(), adapter)
         self.device_path = self.device.object_path
 
@@ -179,7 +179,7 @@ class CommandPair:
         parser.set_defaults(handler=self)
 
     def __call__(self, tool, args):
-        tool.Pair(btts.Config().device_address)
+        tool.Pair(btts.Config().device)
 
 class CommandCancel:
     '''\

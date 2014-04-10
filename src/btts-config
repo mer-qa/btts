@@ -60,13 +60,13 @@ class CommandAdapter:
 
         if args.adapter == None:
             if args.raw_device:
-                print(config.get_adapter_no_alias())
+                print(config.adapter_no_alias)
             elif args.address:
                 print(btts.Adapter().address)
             else:
-                print(config.get_adapter())
+                print(config.adapter)
         else:
-            config.set_adapter(args.adapter)
+            config.adapter = args.adapter
 
 class CommandHostAlias:
     '''\
@@ -98,13 +98,13 @@ class CommandHostAlias:
         config = btts.Config()
 
         if args.alias == None:
-            host_alias = config.get_host_alias()
+            host_alias = config.host_alias
             if host_alias:
                 print(host_alias)
             else:
                 print('<unset>')
         else:
-            config.set_host_alias(args.alias)
+            config.host_alias = args.alias
 
 class CommandDevice:
     '''\
@@ -128,9 +128,9 @@ class CommandDevice:
         config = btts.Config()
 
         if args.device == None:
-            print(config.device_address)
+            print(config.device)
         else:
-            config.device_address = args.device
+            config.device = args.device
 
 # Main argument parser
 main_parser = argparse.ArgumentParser(

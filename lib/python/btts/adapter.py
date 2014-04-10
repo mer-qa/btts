@@ -31,7 +31,7 @@ class Adapter:
 
     def __init__(self):
         self._config = btts.Config()
-        name = self._config.get_adapter_no_alias()
+        name = self._config.adapter_no_alias
 
         self._adapter_object = None
         self._properties_iface = None
@@ -65,7 +65,7 @@ class Adapter:
         return self._properties_iface.Get('org.bluez.Adapter1', 'Address')
 
     def has_feature(self, feature):
-        name = self._config.get_adapter_no_alias()
+        name = self._config.adapter_no_alias
         hciconfig = ['hciconfig', name, 'features']
         features = subprocess.check_output(hciconfig, universal_newlines = True)
         return ''.join(['<', feature, '>']) in features
@@ -103,7 +103,7 @@ class Adapter:
             if e.get_dbus_name() != 'org.bluez.Error.Failed':
                 raise e
 
-        name = self._config.get_adapter_no_alias()
+        name = self._config.adapter_no_alias
         args = ['hcitool', '-i', name, 'scan', '--flush']
         if refresh:
             args.append('--refresh')
