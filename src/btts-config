@@ -53,20 +53,20 @@ class CommandAdapter:
                 help='Device name (e.g. "hci0") or alias (see above)')
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.AdapterManager.Error])
-    @bad_usage_on([btts.AdapterManager.NoSuchAdapterError])
+    @failure_on([btts.Config.Error])
+    @bad_usage_on([btts.Config.NoSuchAdapterError])
     def __call__(self, args):
-        adapter_manager = btts.AdapterManager()
+        config = btts.Config()
 
         if args.adapter == None:
             if args.raw_device:
-                print(adapter_manager.get_adapter_no_alias())
+                print(config.get_adapter_no_alias())
             elif args.address:
                 print(btts.Adapter().address)
             else:
-                print(adapter_manager.get_adapter())
+                print(config.get_adapter())
         else:
-            adapter_manager.set_adapter(args.adapter)
+            config.set_adapter(args.adapter)
 
 class CommandHostAlias:
     '''\
@@ -93,18 +93,18 @@ class CommandHostAlias:
                 help='Host alias. Pass empty string to reset adapter alias.')
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.AdapterManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, args):
-        adapter_manager = btts.AdapterManager()
+        config = btts.Config()
 
         if args.alias == None:
-            host_alias = adapter_manager.get_host_alias()
+            host_alias = config.get_host_alias()
             if host_alias:
                 print(host_alias)
             else:
                 print('<unset>')
         else:
-            adapter_manager.set_host_alias(args.alias)
+            config.set_host_alias(args.alias)
 
 class CommandDevice:
     '''\
@@ -122,15 +122,15 @@ class CommandDevice:
                 help='Device address')
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.DeviceManager.Error])
-    @bad_usage_on([btts.DeviceManager.InvalidAddressError])
+    @failure_on([btts.Config.Error])
+    @bad_usage_on([btts.Config.InvalidAddressError])
     def __call__(self, args):
-        device_manager = btts.DeviceManager()
+        config = btts.Config()
 
         if args.device == None:
-            print(device_manager.device_address)
+            print(config.device_address)
         else:
-            device_manager.device_address = args.device
+            config.device_address = args.device
 
 # Main argument parser
 main_parser = argparse.ArgumentParser(

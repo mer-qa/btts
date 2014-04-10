@@ -72,15 +72,15 @@ class CommandEnabled:
                 help='Profile enabled state (true|false)')
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.ProfileManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, server, args):
-        profile_manager = btts.ProfileManager()
+        config = btts.Config()
 
         if args.enabled == None:
-            state = profile_manager.get_profiles_state()['a2dp']
+            state = config.get_profiles_state()['a2dp']
             print(['false', 'true'][state])
         else:
-            profile_manager.enable_profile('a2dp', args.enabled)
+            config.enable_profile('a2dp', args.enabled)
 
 class CommandReceivingAudio:
     '''\
@@ -97,7 +97,7 @@ class CommandReceivingAudio:
                 description=self.__doc__)
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.ProfileManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, server, args):
         print(['false', 'true'][btts.Recorder.receiving_audio()])
 

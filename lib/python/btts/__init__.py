@@ -20,17 +20,11 @@ __all__ = [
            # from adapter
            'Adapter',
 
-           # from adaptermanager
-           'AdapterManager',
+           # from config
+           'Config',
 
            # from device
            'Device',
-
-           # from devicemanager
-           'DeviceManager',
-
-           # from profilemanager
-           'ProfileManager',
 
            # from audio
            'Echonest',
@@ -50,9 +44,7 @@ if sys.version_info.major > 2:
 import btts.utils
 
 from btts.adapter import Adapter
-from btts.adaptermanager import AdapterManager
+from btts.config import Config
 from btts.device import Device
-from btts.devicemanager import DeviceManager
-from btts.profilemanager import ProfileManager
 from btts.audio import Echonest, Minimodem, Player, Recorder
 from btts.mediacontrol import MediaControl

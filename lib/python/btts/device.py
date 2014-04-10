@@ -32,7 +32,7 @@ class Device:
         self._error = None
         self._path = None
 
-        self._manager = btts.DeviceManager()
+        self._config = btts.Config()
         self._adapter = btts.Adapter()
 
         self._device_object = None
@@ -60,8 +60,8 @@ class Device:
         Is the device currently visible on the network?
 
         Exceptions:
-            AdapterManager.AdapterNotSetError
-            DeviceManager.DeviceNotSetError
+            Config.AdapterNotSetError
+            Config.DeviceNotSetError
         '''
         if self._error:
             raise self._error()
@@ -102,7 +102,7 @@ class Device:
             if object_path.startswith(self._adapter.path):
                 device_properties = interfaces_and_properties.get('org.bluez.Device1')
                 if (device_properties is not None and
-                        device_properties['Address'].lower() == self._manager.device_address):
+                        device_properties['Address'].lower() == self._config.device_address):
                     self._path = object_path
                     bus = dbus.SystemBus()
                     self._device_object = bus.get_object('org.bluez', self._path)
@@ -110,8 +110,8 @@ class Device:
                                                             dbus.PROPERTIES_IFACE)
                     self.available_changed(True)
             self._error = None
-        except (btts.DeviceManager.DeviceNotSetError,
-                btts.AdapterManager.AdapterNotSetError) as e:
+        except (btts.Config.DeviceNotSetError,
+                btts.Config.AdapterNotSetError) as e:
             self._error = type(e)
 
     def _on_interfaces_removed(self, object_path, interfaces):

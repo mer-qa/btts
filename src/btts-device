@@ -52,7 +52,7 @@ class CommandExpectAvailable:
                 description=self.__doc__)
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.AdapterManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, args):
         adapter = btts.Adapter()
         device = btts.Device()
@@ -95,7 +95,7 @@ class CommandExpectUnavailable:
                 description=self.__doc__)
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.AdapterManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, args):
         adapter = btts.Adapter()
         device = btts.Device()
@@ -133,8 +133,7 @@ class CommandTrust:
                             help='Device trusted state (true|false)')
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.AdapterManager.Error, btts.DeviceManager.Error,
-                 btts.Device.Error])
+    @failure_on([btts.Config.Error, btts.Device.Error])
     def __call__(self, args):
         device = btts.Device()
 
@@ -164,7 +163,7 @@ class CommandRemove:
                 description=self.__doc__)
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.AdapterManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, args):
         device = btts.Device()
 

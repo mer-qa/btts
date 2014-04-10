@@ -61,15 +61,15 @@ class CommandEnabled:
                 help='Profile enabled state (true|false)')
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.ProfileManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, server, args):
-        profile_manager = btts.ProfileManager()
+        config = btts.Config()
 
         if args.enabled == None:
-            state = profile_manager.get_profiles_state()['hfp']
+            state = config.get_profiles_state()['hfp']
             print(['false', 'true'][state])
         else:
-            profile_manager.enable_profile('hfp', args.enabled)
+            config.enable_profile('hfp', args.enabled)
 
 class CommandReceivingAudio:
     '''\

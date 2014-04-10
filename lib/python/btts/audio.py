@@ -116,15 +116,15 @@ class Recorder:
         self._sox = None
 
     def _ensure_ready(self):
-        profile_manager = btts.ProfileManager()
-        ready = any(profile_manager.get_profiles_state(profiles=['a2dp', 'hfp']))
+        config = btts.Config()
+        ready = any(config.get_profiles_state(profiles=['a2dp', 'hfp']))
         if not ready:
             raise self.NotReadyError()
 
     @staticmethod
     def _device_address_for_pa():
-        device_manager = btts.DeviceManager()
-        return device_manager.device_address.upper().replace(':', '_')
+        config = btts.Config()
+        return config.device_address.upper().replace(':', '_')
 
     @staticmethod
     def receiving_audio():
@@ -239,8 +239,8 @@ class Player:
         self._paplay = None
 
     def _ensure_ready(self):
-        profile_manager = btts.ProfileManager()
-        ready = profile_manager.get_profiles_state()['hfp']
+        config = btts.Config()
+        ready = config.get_profiles_state()['hfp']
         if not ready:
             raise self.NotReadyError()
 

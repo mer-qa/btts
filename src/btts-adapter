@@ -46,7 +46,7 @@ class CommandPowered:
         parser.set_defaults(handler=self)
 
 
-    @failure_on([btts.AdapterManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, args):
         adapter = btts.Adapter()
 
@@ -80,7 +80,7 @@ class CommandDiscoverable:
         parser.set_defaults(handler=self)
 
 
-    @failure_on([btts.AdapterManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, args):
         adapter = btts.Adapter()
 
@@ -109,7 +109,7 @@ class CommandHasFeature:
                             help='Feature to test for.')
         parser.set_defaults(handler=self)
 
-    @failure_on([btts.AdapterManager.Error])
+    @failure_on([btts.Config.Error])
     def __call__(self, args):
         adapter = btts.Adapter()
         print(["false", "true"][adapter.has_feature(args.feature)])
