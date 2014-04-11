@@ -71,6 +71,74 @@ class CommandEnabled:
         else:
             config.set_profile_enabled('hfp', args.enabled)
 
+class CommandDial:
+    '''\
+    Initiate a new outgoing call.
+
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'dial',
+                help='Initiate a new outgoing call',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument(
+                'number', type=str,
+                help='Phone number to dial')
+        parser.add_argument(
+                'hide_callerid', nargs='?', type=btts.cliutils.boolean,
+                help='Override default (network) CLIR mode')
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.Config.Error, btts.VoiceCall.Error])
+    def __call__(self, server, args):
+        voice_call = btts.VoiceCall()
+
+        hide_callerid = { None: 'default',
+                          True: 'enabled',
+                          False: 'disabled' }[args.hide_callerid]
+
+        voice_call.Dial(args.number, hide_callerid)
+
+class CommandAnswer:
+    '''\
+    Answer an incomming call.
+
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'answer',
+                help='Answer an incomming call',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.Config.Error, btts.VoiceCall.Error])
+    def __call__(self, server, args):
+        voice_call = btts.VoiceCall()
+        voice_call.ReleaseAndAnswer()
+
+class CommandHangup:
+    '''\
+    Hangup an active call.
+
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'hangup',
+                help='Hangup an active call',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([btts.Config.Error, btts.VoiceCall.Error])
+    def __call__(self, server, args):
+        voice_call = btts.VoiceCall()
+        voice_call.HangupAll()
+
 class CommandReceivingAudio:
     '''\
     Test if receiving audio right now.
@@ -139,6 +207,9 @@ subparsers = main_parser.add_subparsers(
             on the given subcommand.''')
 
 CommandEnabled(subparsers)
+CommandDial(subparsers)
+CommandAnswer(subparsers)
+CommandHangup(subparsers)
 CommandReceivingAudio(subparsers)
 CommandPlayBackAndVerifyEcho(subparsers)
 

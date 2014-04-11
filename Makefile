@@ -54,6 +54,7 @@ install:
 	$(INSTALL_PYTHON_MOD) lib/python/btts/device.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/mediacontrol.py
 	$(INSTALL_PYTHON_MOD) lib/python/btts/utils.py
+	$(INSTALL_PYTHON_MOD) lib/python/btts/voicecall.py
 
 	$(INSTALL_DIR) $(CONF_DIR)
 	$(INSTALL_CONF_FILE) conf/adapters

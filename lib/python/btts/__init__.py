@@ -34,6 +34,9 @@ __all__ = [
 
            # from mediacontrol
            'MediaControl',
+
+           # from voicecall
+           'VoiceCall',
            ]
 
 import sys
@@ -48,3 +51,4 @@ from btts.config import Config
 from btts.device import Device
 from btts.audio import Echonest, Minimodem, Player, Recorder
 from btts.mediacontrol import MediaControl
+from btts.voicecall import VoiceCall
