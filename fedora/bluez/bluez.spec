@@ -42,6 +42,10 @@ Requires(post): systemd
 Requires(preun): systemd
 Requires(postun): systemd
 
+# Prevent getting official Fedora updates
+Requires: bluez-libs%{?_isa} = %{version}-%{release}
+Requires: bluez-debuginfo%{?_isa} = %{version}-%{release}
+
 # Dropped in Fedora 20:
 Obsoletes: bluez-alsa < 5.0
 Obsoletes: bluez-compat < 5.0
