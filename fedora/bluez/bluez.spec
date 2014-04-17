@@ -19,6 +19,7 @@ Patch4: 0001-obex-Use-GLib-helper-function-to-manipulate-paths.patch
 Patch5: 0002-autopair-Don-t-handle-the-iCade.patch
 Patch7: 0004-agent-Assert-possible-infinite-loop.patch
 Patch8: 0001-Start-with-compat-switch-for-sdptool-to-work.patch
+Patch9: 0001-obex-client-tool-Set-the-length-header.patch
 
 BuildRequires: git
 BuildRequires: flex
