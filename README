@@ -45,6 +45,8 @@ necessary packages present.
 Depending on your host setup, the minimal set of arguments might work for you.
 (Run ./fedora/kickstart.sh --help for details.)
 
+  (host)$ git clone https://github.com/mer-qa/btts.git
+  (host)$ cd btts
   (host)$ ./fedora/kickstart.sh <vendor-id>:<device-id> pool=default
 
 Replace <vendor-id>:<device-id> with the ID pair of the USB Bluetooth device
