@@ -43,6 +43,7 @@ install:
 	$(INSTALL_LIBEXEC_PROG) src/btts-config
 	$(INSTALL_LIBEXEC_PROG) src/btts-device
 	$(INSTALL_LIBEXEC_PROG) src/btts-hfp
+	$(INSTALL_LIBEXEC_PROG) src/btts-opp-client
 	$(INSTALL_LIBEXEC_PROG) src/btts-pairing
 
 	$(INSTALL_DIR) $(PYTHON_PKG_DIR)
@@ -67,6 +68,7 @@ install:
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-bluez-pairing-tool.service
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-a2dp-tool.service
 	$(INSTALL_SYSTEMD_UNIT) systemd/btts-hfp-tool.service
+	$(INSTALL_SYSTEMD_UNIT) systemd/btts-opp-client-tool.service
 
 	$(INSTALL_DIR) $(TMPFILES_D_DIR)
 	$(INSTALL_TMPFILES_D_CONFIG) systemd/tmpfiles.d/btts.conf

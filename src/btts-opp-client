@@ -1,0 +1,380 @@
+#!/usr/bin/python3
+#
+# BTTS - BlueTooth Test Suite
+#
+# Copyright (C) 2014 Jolla Ltd.
+# Contact: Martin Kampas <martin.kampas@jollamobile.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import dbus
+import dbus.mainloop.glib
+from   gi.repository import GObject
+import logging
+import os
+import sys
+
+import btts
+from   btts.cliutils import failure_on, bad_usage_on, error_handler
+from   btts.utils import dbus_service_method, dbus_service_signal
+
+PUT_OBJECT_DIR = '/tmp/btts-opp-client/put'
+PUT_OBJECT_MAX_SIZE = 50 << 20 # Bytes
+
+SERVER_BUS_NAME = 'org.merproject.btts.OppClientTool'
+SERVER_PATH = '/org/merproject/btts/OppClientTool'
+SERVER_INTERFACE = 'org.merproject.btts.OppClientTool'
+
+log = logging.getLogger(__name__)
+
+class Server(dbus.service.Object):
+    class Error(Exception):
+        _dbus_error_name = 'org.merproject.btts.OppClientTool.Error'
+
+        def __init__(self, msg):
+            Exception.__init__(self, msg)
+
+    class State:
+        initial = 'initial'
+        in_progress = 'in-progress'
+        finished = 'finished'
+        failed = 'failed'
+        cancelled = 'cancelled'
+    states = [State.initial, State.in_progress, State.finished,
+              State.failed, State.cancelled]
+
+    def __init__(self, bus, path):
+        dbus.service.Object.__init__(self, bus, path)
+        self._state = self.State.initial
+        self._client = None
+        self._session = None
+        self._opp = None
+        self._transfer = None
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature='', out_signature='s')
+    def GetState(self):
+        return self._state
+
+    @dbus_service_signal(SERVER_INTERFACE,
+                         signature='s')
+    def StateChanged(self, state):
+        pass
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature='', out_signature='')
+    def Put(self):
+        self._reset()
+        self._init_session('OPP')
+
+        def on_reply(path, properties):
+            transfer_obj = self.connection.get_object('org.bluez.obex',
+                                                      path)
+            self._transfer = dbus.Interface(transfer_obj,
+                                            'org.bluez.obex.Transfer1')
+
+        def on_error(err):
+            log.error('SendFile failed: %s' % (err))
+            self._set_state(self.State.failed)
+
+        self._opp.SendFile(self._put_object_path(),
+                           reply_handler=on_reply, error_handler=on_error)
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature='', out_signature='')
+    def Cancel(self):
+        if self._state != self.State.in_progress:
+            raise self.Error('Not started')
+
+        try:
+            self._transfer.Cancel()
+            self._set_state(self.State.cancelled)
+        except Exception as e:
+            log.exception('Cancel failed')
+            self._set_state(self.State.failed)
+            raise Server.Error('Cancel failed: %s' % (e))
+
+    def _reset(self):
+        if self._session:
+            self._client.RemoveSession(self._session)
+            self.connection.remove_signal_receiver(self._on_properties_changed)
+        self._transfer = None
+        self._opp = None
+        self._session = None
+        self._client = None
+        self._set_state(self.State.initial)
+
+    def _set_state(self, state):
+        if self._state == state:
+            return
+        self._state = state
+        self.StateChanged(self._state)
+
+    def _init_session(self, target):
+        assert self._state == self.State.initial
+
+        client_obj = self.connection.get_object('org.bluez.obex',
+                                                '/org/bluez/obex')
+        self._client = dbus.Interface(client_obj,
+                                      'org.bluez.obex.Client1')
+
+        session_path = self._client.CreateSession(btts.Config().device,
+                                                  { 'Target': 'OPP' })
+
+        session_obj = self.connection.get_object('org.bluez.obex',
+                                                 session_path)
+        self._session = dbus.Interface(session_obj,
+                                       'org.bluez.obex.Session1')
+
+        if target == 'OPP':
+            self._opp = dbus.Interface(session_obj,
+                                       'org.bluez.obex.ObjectPush1')
+
+        self.connection.add_signal_receiver(self._on_properties_changed,
+                bus_name='org.bluez.obex',
+                dbus_interface='org.freedesktop.DBus.Properties',
+                signal_name='PropertiesChanged',
+                path_keyword='path')
+
+    def _on_properties_changed(self, interface, properties, invalidated, path):
+        if path != self._transfer.object_path:
+            return
+
+        try:
+            self._set_state({
+                    'active': self.State.in_progress,
+                    'complete': self.State.finished,
+                    'error': self.State.failed,
+                    }[properties['Status']])
+            log.debug('_on_properties_changed: state %s -> %s'
+                      % (properties['Status'], self._state))
+        except KeyError:
+            pass
+
+    @staticmethod
+    def _put_object_path():
+        try:
+            objects = os.listdir(PUT_OBJECT_DIR)
+        except FileNotFoundError:
+            pass
+        if not objects:
+            raise self.Error('Object not set')
+        assert len(objects) == 1
+        return os.path.join(PUT_OBJECT_DIR, objects[0])
+
+#class CommandEnabled:
+#    '''\
+#    Get/Set profile enabled state.
+#
+#    With no argument it prints "true" or "false" to indicate current state.
+#    '''
+#
+#    def __init__(self, subparsers):
+#        parser = subparsers.add_parser(
+#                'enabled',
+#                help='Get/Set profile enabled state',
+#                formatter_class=argparse.RawDescriptionHelpFormatter,
+#                description=self.__doc__)
+#        parser.add_argument(
+#                'enabled', nargs='?', type=btts.cliutils.boolean,
+#                help='Profile enabled state (true|false)')
+#        parser.set_defaults(handler=self)
+#
+#    @failure_on([btts.Config.Error])
+#    def __call__(self, server, args):
+#        config = btts.Config()
+#
+#        if args.enabled == None:
+#            state = config.profile_enabled('opp')
+#            print(['false', 'true'][state])
+#        else:
+#            config.set_profile_enabled('opp', args.enabled)
+
+class CommandState:
+    '''\
+    Get state.
+
+    Possible states:
+
+        initial        tool is in its initial state. The tool automatically
+                       enters this state when an OPP action is invoked (i.e.
+                       there is no "reset" command)
+        in-progress    transfer in progress
+        finished       transfer successfully finished
+        cancelled      cancel operation successfully finished
+        failed         failed
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'state',
+                help='Get state',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    def __call__(self, server, args):
+        print(server.GetState())
+
+class CommandExpectState:
+    '''\
+    Verify state change - waiting.
+
+    Also see `state'
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'expect-state',
+                help='Verify state change - waiting',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('state', type=str,
+                            help='Expected state')
+        parser.add_argument('timeout', nargs='?', type=int, default=10,
+                            help='Timeout [secs]')
+        parser.set_defaults(handler=self)
+
+    def __call__(self, server, args):
+        state = server.GetState()
+        if state == args.state:
+            print('true')
+            return
+
+        state = [] # hack for missing 'nonlocal' keyword in python 2
+        loop = GObject.MainLoop()
+        def on_state_changed(state_):
+            state.append(state_)
+            loop.quit()
+        server.connect_to_signal('StateChanged',
+                                on_state_changed)
+        GObject.timeout_add(args.timeout * 1000, loop.quit)
+        loop.run()
+
+        if state == []:
+            log.warning('Timeout waiting for state change')
+        if state != [args.state]:
+            log.warning('Current state: %s' % (state))
+        print(['false', 'true'][state == [args.state]])
+
+class CommandSetObject:
+    '''\
+    Set object to test 'put' with.
+
+    The data is read from stdin.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'set-object',
+                help='Set object to test "put" with',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('file_name', type=str,
+                            help=('File name for the object (may be used for '
+                                  + 'content type detection)'))
+        parser.set_defaults(handler=self)
+
+    def __call__(self, server, args):
+        os.makedirs(PUT_OBJECT_DIR, mode=0o755, exist_ok=True)
+        for old_file in os.listdir(PUT_OBJECT_DIR):
+            os.remove(os.path.join(PUT_OBJECT_DIR, old_file))
+
+        object_file_path = os.path.join(PUT_OBJECT_DIR, args.file_name)
+        with open(object_file_path, 'wb') as object_file:
+            btts.utils.sendfile(object_file, sys.stdin.buffer,
+                                PUT_OBJECT_MAX_SIZE)
+
+class CommandPut:
+    '''\
+    Put a file onto the server.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'put',
+                help='Put a file onto the server',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([Server.Error])
+    def __call__(self, server, args):
+        server.Put()
+
+class CommandCancel:
+    '''\
+    Cancel current transfer.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'cancel',
+                help='Cancel current transfer',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([Server.Error])
+    def __call__(self, server, args):
+        server.Cancel()
+
+# Main argument parser
+main_parser = argparse.ArgumentParser(
+        prog='btts opp-client',
+        description='Object Push Profile client utility.')
+subparsers = main_parser.add_subparsers(
+        dest='subcommand', title='subcommands',
+        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
+            on the given subcommand.''')
+
+#CommandEnabled(subparsers)
+CommandState(subparsers)
+CommandExpectState(subparsers)
+CommandSetObject(subparsers)
+CommandPut(subparsers)
+CommandCancel(subparsers)
+
+main_parser.usage = '%(prog)s --server\n' + main_parser.format_usage()
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+bus = dbus.SessionBus()
+
+if '--server' in sys.argv:
+    if len(sys.argv) > 2:
+        main_parser.error('Unexpected argument')
+
+    mainloop = GObject.MainLoop()
+
+    name = dbus.service.BusName(SERVER_BUS_NAME, bus)
+    server = Server(bus, SERVER_PATH)
+
+    # TODO: signal handling
+    #signal.signal(signal.SIGINT,
+    #           lambda *args: gobject.idle_add(mainloop.quit))
+    #signal.signal(signal.SIGTERM,
+    #           lambda *args: gobject.idle_add(mainloop.quit))
+
+    mainloop.run()
+else:
+    args = main_parser.parse_args()
+    if not args.subcommand:
+        main_parser.print_usage()
+        sys.exit(1)
+
+    server_object = bus.get_object(SERVER_BUS_NAME, SERVER_PATH)
+    server = dbus.Interface(server_object, SERVER_INTERFACE)
+
+    with error_handler(main_parser):
+        args.handler(server, args)
