@@ -4,7 +4,7 @@ cd $(dirname "$0")
 
 sudo yum makecache --disablerepo='*' --enablerepo='btts-local'
 
-if installed="$(repoquery --installed 'btts*')"
+if installed="$(repoquery --installed 'btts*' |grep .)"
 then
 	sudo rpm -e --nodeps ${installed}
 fi
