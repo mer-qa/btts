@@ -18,6 +18,7 @@ Requires:	pulseaudio-utils
 Requires:	python3
 Requires:	python3-dbus
 Requires:	python3-gobject
+Requires:	python3-pyxdg
 Requires:	sox
 Requires:	minimodem
 BuildRequires:	python2-devel
@@ -76,6 +77,7 @@ make install DESTDIR=%{buildroot}
 %{_unitdir}/btts-dbus.service
 %{_unitdir}/btts-hfp-tool.service
 %{_unitdir}/btts-opp-client-tool.service
+%{_unitdir}/btts-opp-server-tool.service
 %{_unitdir}/btts-pulseaudio.service
 %{_unitdir}/btts.target
 %config %{_sysconfdir}/dbus-1/system.d/btts.conf

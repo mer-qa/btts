@@ -1,0 +1,490 @@
+#!/usr/bin/python3
+#
+# BTTS - BlueTooth Test Suite
+#
+# Copyright (C) 2014 Jolla Ltd.
+# Contact: Martin Kampas <martin.kampas@jollamobile.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import dbus
+import dbus.mainloop.glib
+from   gi.repository import GObject
+import hashlib
+import logging
+import os
+import sys
+import xdg.BaseDirectory
+
+import btts
+from   btts.cliutils import failure_on, bad_usage_on, error_handler
+from   btts.utils import dbus_service_method, dbus_service_signal
+
+# see obexd --help, option --root
+PUT_OBJECT_PATH = os.path.join(xdg.BaseDirectory.save_cache_path('obexd'),
+                               'btts-opp-server/put')
+PUT_OBJECT_MAX_SIZE = 50 << 20 # Bytes
+
+SERVER_BUS_NAME = 'org.merproject.btts.OppServerTool'
+SERVER_PATH = '/org/merproject/btts/OppServerTool'
+SERVER_INTERFACE = 'org.merproject.btts.OppServerTool'
+
+log = logging.getLogger(__name__)
+
+class RejectedError(dbus.DBusException):
+    _dbus_error_name = 'org.bluez.Error.Rejected'
+
+class Server(dbus.service.Object):
+    class Error(Exception):
+        _dbus_error_name = 'org.merproject.btts.OppServerTool.Error'
+
+        def __init__(self, msg):
+            Exception.__init__(self, msg)
+
+    class AuthState:
+        initial = 'initial'
+        in_progress = 'in-progress'
+        accepted = 'accepted'
+        rejected = 'rejected'
+        cancelled = 'cancelled'
+
+    class XferState:
+        initial = 'initial'
+        in_progress = 'in-progress'
+        finished = 'finished'
+        failed = 'failed'
+        cancelled = 'cancelled'
+
+    def __init__(self, bus, path):
+        dbus.service.Object.__init__(self, bus, path)
+
+        self._auth_state = self.AuthState.initial
+        self._xfer_state = self.XferState.initial
+
+        self._reset()
+
+        agent_manager_obj = self.connection.get_object('org.bluez.obex',
+                                                       '/org/bluez/obex')
+        agent_manager = dbus.Interface(agent_manager_obj,
+                                       'org.bluez.obex.AgentManager1')
+        agent_manager.RegisterAgent(path)
+
+        self.connection.add_signal_receiver(
+                self._on_xfer_properties_changed,
+                bus_name='org.bluez.obex',
+                dbus_interface='org.freedesktop.DBus.Properties',
+                signal_name='PropertiesChanged',
+                path_keyword='path')
+
+    @dbus_service_method('org.bluez.obex.Agent1',
+                         in_signature='', out_signature='')
+    def Release(self):
+        pass
+
+    @dbus_service_method('org.bluez.obex.Agent1',
+                         in_signature='o', out_signature='s',
+                         async_callbacks=('reply_handler', 'error_handler'))
+    def AuthorizePush(self, transfer, reply_handler, error_handler):
+        self._reset()
+        self._set_auth_state(self.AuthState.in_progress)
+        self._auth_reply_handler = reply_handler
+        self._auth_error_handler = error_handler
+        transfer_obj = self.connection.get_object('org.bluez.obex',
+                                                  transfer)
+        self._transfer = dbus.Interface(transfer_obj,
+                                        'org.bluez.obex.Transfer1')
+
+    @dbus_service_method('org.bluez.obex.Agent1',
+                         in_signature='', out_signature='')
+    def Cancel(self):
+        self._set_auth_state(self.AuthState.cancelled)
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature='', out_signature='s')
+    def GetAuthState(self):
+        return self._auth_state
+
+    @dbus_service_signal(SERVER_INTERFACE,
+                         signature='s')
+    def AuthStateChanged(self, state):
+        pass
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature='', out_signature='s')
+    def GetXferState(self):
+        return self._xfer_state
+
+    @dbus_service_signal(SERVER_INTERFACE,
+                         signature='s')
+    def XferStateChanged(self, state):
+        pass
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature='', out_signature='')
+    def AcceptAuthRequest(self):
+        if self._auth_state != self.AuthState.in_progress:
+            raise Server.Error('Not started')
+        self._auth_reply_handler(PUT_OBJECT_PATH)
+        self._set_auth_state(self.AuthState.accepted)
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature='', out_signature='')
+    def RejectAuthRequest(self):
+        if self._auth_state != self.AuthState.in_progress:
+            raise Server.Error('Not started')
+        self._auth_error_handler(RejectedError('Rejected by user'))
+        self._set_auth_state(self.AuthState.rejected)
+
+    @dbus_service_method(SERVER_INTERFACE,
+                         in_signature='', out_signature='')
+    def CancelTransfer(self):
+        if self._xfer_state != self.XferState.in_progress:
+            raise Server.Error('Not started')
+
+        self._transfer.Cancel()
+        self._set_xfer_state(self.XferState.cancelled)
+
+    def _set_auth_state(self, auth_state):
+        if self._auth_state == auth_state:
+            return
+        self._auth_state = auth_state
+        self.AuthStateChanged(self._auth_state)
+
+    def _set_xfer_state(self, xfer_state):
+        if self._xfer_state == xfer_state:
+            return
+        self._xfer_state = xfer_state
+        self.XferStateChanged(self._xfer_state)
+
+    def _on_xfer_properties_changed(self, interface, properties, invalidated,
+                                    path):
+        if not self._transfer:
+            return
+        if path != self._transfer.object_path:
+            return
+
+        try:
+            self._set_xfer_state({
+                    'active': self.XferState.in_progress,
+                    'complete': self.XferState.finished,
+                    'error': self.XferState.failed,
+                    }[properties['Status']])
+            log.debug('_on_xfer_properties_changed: state %s -> %s'
+                      % (properties['Status'], self._xfer_state))
+        except KeyError:
+            pass
+
+    def _reset(self):
+        self._set_auth_state(self.AuthState.initial)
+        self._set_xfer_state(self.XferState.initial)
+        self._auth_reply_handler = None
+        self._auth_error_handler = None
+        self._transfer = None
+
+        try:
+            os.remove(PUT_OBJECT_PATH)
+        except FileNotFoundError:
+            pass
+
+        os.makedirs(os.path.dirname(PUT_OBJECT_PATH), 0o755, exist_ok=True)
+
+#class CommandEnabled:
+#    '''\
+#    Get/Set profile enabled state.
+#
+#    With no argument it prints "true" or "false" to indicate current state.
+#    '''
+#
+#    def __init__(self, subparsers):
+#        parser = subparsers.add_parser(
+#                'enabled',
+#                help='Get/Set profile enabled state',
+#                formatter_class=argparse.RawDescriptionHelpFormatter,
+#                description=self.__doc__)
+#        parser.add_argument(
+#                'enabled', nargs='?', type=btts.cliutils.boolean,
+#                help='Profile enabled state (true|false)')
+#        parser.set_defaults(handler=self)
+#
+#    @failure_on([btts.Config.Error])
+#    def __call__(self, server, args):
+#        config = btts.Config()
+#
+#        if args.enabled == None:
+#            state = config.profile_enabled('opp')
+#            print(['false', 'true'][state])
+#        else:
+#            config.set_profile_enabled('opp', args.enabled)
+
+class CommandAuthState:
+    '''\
+    Get authorization state.
+
+    Possible states:
+
+        initial        tool is in its initial state. The tool automatically
+                       enters this state when an OPP action is initiated, i.e.,
+                       there is no "reset" command.
+        in-progress    authorization in progress
+        accepted       transfer has been accepted
+        rejected       transfer has been rejected
+        cancelled      transfer was cancelled before authorization request was
+                       replied
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'auth-state',
+                help='Get authorization state',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([Server.Error])
+    def __call__(self, server, args):
+        print(server.GetAuthState())
+
+class CommandExpectAuthState:
+    '''\
+    Verify authorization state change - waiting.
+
+    Also see `auth-state'
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'expect-auth-state',
+                help='Verify authorization state change - waiting',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('state', type=str,
+                            help='Expected state')
+        parser.add_argument('timeout', nargs='?', type=int, default=10,
+                            help='Timeout [secs]')
+        parser.set_defaults(handler=self)
+
+    def __call__(self, server, args):
+        state = server.GetAuthState()
+        if state == args.state:
+            print('true')
+            return
+
+        state = [] # hack for missing 'nonlocal' keyword in python 2
+        loop = GObject.MainLoop()
+        def on_auth_state_changed(state_):
+            state.append(state_)
+            loop.quit()
+        server.connect_to_signal('AuthStateChanged',
+                                on_auth_state_changed)
+        GObject.timeout_add(args.timeout * 1000, loop.quit)
+        loop.run()
+
+        if state == []:
+            log.warning('Timeout waiting for auth-state change')
+        if state != [args.state]:
+            log.warning('Current state: %s' % (state))
+        print(['false', 'true'][state == [args.state]])
+
+class CommandAuthAccept:
+    '''\
+    Accept the requested transfer.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'auth-accept',
+                help='Accept the requested transfer',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([Server.Error])
+    def __call__(self, server, args):
+        server.AcceptAuthRequest()
+
+class CommandAuthReject:
+    '''\
+    Reject the requested transfer.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'auth-reject',
+                help='Reject the requested transfer',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([Server.Error])
+    def __call__(self, server, args):
+        server.RejectAuthRequest()
+
+class CommandXferState:
+    '''\
+    Get transfer state.
+
+    Possible states:
+
+        initial        tool is in its initial state. The tool automatically
+                       enters this state when an OPP action is initiated, i.e.,
+                       there is no "reset" command.
+        in-progress    transfer in progress
+        finished       transfer successfully finished
+        cancelled      cancel operation successfully finished
+        failed         failed
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'xfer-state',
+                help='Get transfer state',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([Server.Error])
+    def __call__(self, server, args):
+        print(server.GetXferState())
+
+class CommandExpectXferState:
+    '''\
+    Verify transfer state change - waiting.
+
+    Also see `xfer-state'
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'expect-xfer-state',
+                help='Verify transfer state change - waiting',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.add_argument('state', type=str,
+                            help='Expected state')
+        parser.add_argument('timeout', nargs='?', type=int, default=10,
+                            help='Timeout [secs]')
+        parser.set_defaults(handler=self)
+
+    def __call__(self, server, args):
+        state = server.GetXferState()
+        if state == args.state:
+            print('true')
+            return
+
+        state = [] # hack for missing 'nonlocal' keyword in python 2
+        loop = GObject.MainLoop()
+        def on_xfer_state_changed(state_):
+            state.append(state_)
+            loop.quit()
+        server.connect_to_signal('XferStateChanged',
+                                on_xfer_state_changed)
+        GObject.timeout_add(args.timeout * 1000, loop.quit)
+        loop.run()
+
+        if state == []:
+            log.warning('Timeout waiting for xfer-state change')
+        if state != [args.state]:
+            log.warning('Current state: %s' % (state))
+        print(['false', 'true'][state == [args.state]])
+
+class CommandXferCancel:
+    '''\
+    Cancel current transfer.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'xfer-cancel',
+                help='Cancel current transfer',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    @failure_on([Server.Error])
+    def __call__(self, server, args):
+        server.CancelTransfer()
+
+class CommandSha1:
+    '''\
+    Compute SHA-1 hash of the received object.
+    '''
+
+    def __init__(self, subparsers):
+        parser = subparsers.add_parser(
+                'sha1',
+                help='Compute SHA-1 hash of the received object',
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=self.__doc__)
+        parser.set_defaults(handler=self)
+
+    def __call__(self, server, args):
+        try:
+            with open(PUT_OBJECT_PATH, 'rb') as object_file:
+                sha1 = hashlib.sha1()
+                sha1.update(object_file.read())
+                print(sha1.hexdigest())
+        except FileNotFoundError:
+            raise btts.cliutils.Failure('No object received yet')
+
+# Main argument parser
+main_parser = argparse.ArgumentParser(
+        prog='btts opp-server',
+        description='Object Push Profile server utility.')
+subparsers = main_parser.add_subparsers(
+        dest='subcommand', title='subcommands',
+        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
+            on the given subcommand.''')
+
+#CommandEnabled(subparsers)
+CommandAuthState(subparsers)
+CommandExpectAuthState(subparsers)
+CommandAuthAccept(subparsers)
+CommandAuthReject(subparsers)
+CommandXferState(subparsers)
+CommandExpectXferState(subparsers)
+CommandXferCancel(subparsers)
+CommandSha1(subparsers)
+
+main_parser.usage = '%(prog)s --server\n' + main_parser.format_usage()
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+bus = dbus.SessionBus()
+
+if '--server' in sys.argv:
+    if len(sys.argv) > 2:
+        main_parser.error('Unexpected argument')
+
+    mainloop = GObject.MainLoop()
+
+    name = dbus.service.BusName(SERVER_BUS_NAME, bus)
+    server = Server(bus, SERVER_PATH)
+
+    # TODO: signal handling
+    #signal.signal(signal.SIGINT,
+    #           lambda *args: gobject.idle_add(mainloop.quit))
+    #signal.signal(signal.SIGTERM,
+    #           lambda *args: gobject.idle_add(mainloop.quit))
+
+    mainloop.run()
+else:
+    args = main_parser.parse_args()
+    if not args.subcommand:
+        main_parser.print_usage()
+        sys.exit(1)
+
+    server_object = bus.get_object(SERVER_BUS_NAME, SERVER_PATH)
+    server = dbus.Interface(server_object, SERVER_INTERFACE)
+
+    with error_handler(main_parser):
+        args.handler(server, args)

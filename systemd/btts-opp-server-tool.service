@@ -1,0 +1,12 @@
+[Unit]
+Description=Bluetooth test suite - OPP server tool
+After=bluetooth.service
+StopWhenUnneeded=True
+
+[Service]
+ExecStart=/usr/bin/btts opp-server --server
+EnvironmentFile=/usr/libexec/btts/environment
+User=btts
+
+[Install]
+RequiredBy=btts.target
