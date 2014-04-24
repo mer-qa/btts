@@ -254,23 +254,20 @@ class CommandVerify:
         print(['false', 'true'][ok])
 
 # Main argument parser
-main_parser = argparse.ArgumentParser(
-        prog='btts a2dp',
-        description='Advanced Audio Distribution Profile controlling utility.')
-subparsers = main_parser.add_subparsers(
-        dest='subcommand', title='subcommands',
-        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
-            on the given subcommand.''')
-
-CommandEnabled(subparsers)
-CommandReceivingAudio(subparsers)
-CommandSetSample(subparsers)
-CommandAsyncRecordAndVerify(subparsers)
-CommandAsyncRecordAndVerifyWait(subparsers)
-CommandRecordAndVerify(subparsers)
-CommandVerify(subparsers)
-
-main_parser.usage = '%(prog)s --server\n' + main_parser.format_usage()
+main_parser = btts.cliutils.ArgumentParser(
+        prog='a2dp',
+        description='''\
+Advanced Audio Distribution Profile controlling utility.''',
+        add_server_option=True,
+        subcommands=[
+                CommandEnabled,
+                CommandReceivingAudio,
+                CommandSetSample,
+                CommandAsyncRecordAndVerify,
+                CommandAsyncRecordAndVerifyWait,
+                CommandRecordAndVerify,
+                CommandVerify,
+            ])
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 bus = dbus.SystemBus()

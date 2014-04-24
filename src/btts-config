@@ -133,17 +133,16 @@ class CommandDevice:
             config.device = args.device
 
 # Main argument parser
-main_parser = argparse.ArgumentParser(
-        prog='btts config',
-        description='Bluetooth Test Suite configuration and management utility.')
-subparsers = main_parser.add_subparsers(
-        dest='subcommand', title='subcommands',
-        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
-            on the given subcommand.''')
-
-CommandAdapter(subparsers)
-CommandHostAlias(subparsers)
-CommandDevice(subparsers)
+main_parser = btts.cliutils.ArgumentParser(
+        prog='config',
+        description='''\
+Bluetooth Test Suite configuration and management utility.''',
+        add_server_option=False,
+        subcommands=[
+                CommandAdapter,
+                CommandHostAlias,
+                CommandDevice,
+            ])
 
 args = main_parser.parse_args()
 if not args.subcommand:

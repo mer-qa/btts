@@ -312,30 +312,19 @@ if __name__ == '__main__':
 
     bus = dbus.SystemBus()
 
-    parser = argparse.ArgumentParser(
-            prog='btts pairing',
-            formatter_class=argparse.RawDescriptionHelpFormatter,
+    parser = btts.cliutils.ArgumentParser(
+            prog='pairing',
             description='''\
-Bluez pairing tool with non-interactive command line user interface.
-
-It consists of a background service and a client process providing user
-interface. Pass `--server' option to run the background service instead of user
-interface.
-
-''')
-    subparsers = parser.add_subparsers(
-            dest='subcommand', title='subcommands',
-            help='''Valid subcommands. Pass "<subcommand> --help" to get
-                more help on the given subcommand.''')
-
-    CommandPair(subparsers)
-    CommandCancel(subparsers)
-    CommandState(subparsers)
-    CommandExpectState(subparsers)
-    CommandErrorName(subparsers)
-    CommandReset(subparsers)
-
-    parser.usage = '%(prog)s --server\n' + parser.format_usage()
+Bluez pairing tool with non-interactive command line user interface.''',
+            add_server_option=True,
+            subcommands=[
+                    CommandPair,
+                    CommandCancel,
+                    CommandState,
+                    CommandExpectState,
+                    CommandErrorName,
+                    CommandReset,
+                ])
 
     if '--server' in sys.argv:
         if len(sys.argv) > 2:

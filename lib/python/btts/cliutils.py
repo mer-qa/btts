@@ -18,6 +18,7 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+import argparse
 import dbus
 import sys
 
@@ -93,3 +94,37 @@ def boolean(string):
         return False
     else:
         raise TypeError
+
+class ArgumentParser(argparse.ArgumentParser):
+    def __init__(self, prog, description, add_server_option, subcommands):
+        if add_server_option:
+            maybe_server_help = '''\n
+It consists of a background service and a client process providing user
+interface,  which is the default mode of execution. The background service
+should be started automatically as a system service and so you normally never
+need to pass the `--server' option.
+'''
+        else:
+            maybe_server_help = ''
+
+        argparse.ArgumentParser.__init__(
+                self,
+                prog=('btts ' + prog),
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=(description + maybe_server_help))
+
+        subparsers = argparse.ArgumentParser.add_subparsers(
+                self,
+                dest='subcommand',
+                title='subcommands',
+                help='''\
+Valid subcommands. Pass "<subcommand> --help" to get more help on the given
+subcommand.''',
+                parser_class=argparse.ArgumentParser)
+
+        self._subcommands = []
+        for subcommand in subcommands:
+            self._subcommands.append(subcommand(subparsers))
+
+        if add_server_option:
+            self.usage = '%(prog)s --server\n' + self.format_usage()

@@ -331,22 +331,19 @@ class CommandCancel:
         server.Cancel()
 
 # Main argument parser
-main_parser = argparse.ArgumentParser(
-        prog='btts opp-client',
-        description='Object Push Profile client utility.')
-subparsers = main_parser.add_subparsers(
-        dest='subcommand', title='subcommands',
-        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
-            on the given subcommand.''')
-
-#CommandEnabled(subparsers)
-CommandState(subparsers)
-CommandExpectState(subparsers)
-CommandSetObject(subparsers)
-CommandPut(subparsers)
-CommandCancel(subparsers)
-
-main_parser.usage = '%(prog)s --server\n' + main_parser.format_usage()
+main_parser = btts.cliutils.ArgumentParser(
+        prog='opp-client',
+        description='''\
+Object Push Profile client utility.''',
+        add_server_option=True,
+        subcommands=[
+                #CommandEnabled,
+                CommandState,
+                CommandExpectState,
+                CommandSetObject,
+                CommandPut,
+                CommandCancel,
+            ])
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 bus = dbus.SessionBus()

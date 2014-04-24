@@ -438,25 +438,22 @@ class CommandSha1:
             raise btts.cliutils.Failure('No object received yet')
 
 # Main argument parser
-main_parser = argparse.ArgumentParser(
-        prog='btts opp-server',
-        description='Object Push Profile server utility.')
-subparsers = main_parser.add_subparsers(
-        dest='subcommand', title='subcommands',
-        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
-            on the given subcommand.''')
-
-#CommandEnabled(subparsers)
-CommandAuthState(subparsers)
-CommandExpectAuthState(subparsers)
-CommandAuthAccept(subparsers)
-CommandAuthReject(subparsers)
-CommandXferState(subparsers)
-CommandExpectXferState(subparsers)
-CommandXferCancel(subparsers)
-CommandSha1(subparsers)
-
-main_parser.usage = '%(prog)s --server\n' + main_parser.format_usage()
+main_parser = btts.cliutils.ArgumentParser(
+        prog='opp-server',
+        description='''\
+Object Push Profile server utility.''',
+        add_server_option=True,
+        subcommands=[
+                #CommandEnabled,
+                CommandAuthState,
+                CommandExpectAuthState,
+                CommandAuthAccept,
+                CommandAuthReject,
+                CommandXferState,
+                CommandExpectXferState,
+                CommandXferCancel,
+                CommandSha1,
+            ])
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 bus = dbus.SessionBus()

@@ -632,36 +632,24 @@ if __name__ == '__main__':
 
     bus = dbus.SystemBus()
 
-    parser = argparse.ArgumentParser(
-            prog='btts agent',
-            formatter_class=argparse.RawDescriptionHelpFormatter,
+    parser = btts.cliutils.ArgumentParser(
+            prog='agent',
             description='''\
 Bluez agent with non-interactive command line user interface.
 
-See org.bluez.Agent1 in bluez5 D-Bus API documentation.
-
-It consists of a background service and a client process providing user
-interface. Pass `--server' option to run the background service instead of user
-interface.
-
-''')
-    subparsers = parser.add_subparsers(
-            dest='subcommand', title='subcommands',
-            help='''Valid subcommands. Pass "<subcommand> --help" to get
-                more help on the given subcommand.''')
-
-
-    CommandReleased(subparsers)
-    CommandActiveCall(subparsers)
-    CommandExpectActiveCall(subparsers)
-    CommandFinishActiveCall(subparsers)
-    CommandRejectActiveCall(subparsers)
-    CommandCancelActiveCall(subparsers)
-    CommandDisplayedPasskey(subparsers)
-    CommandExpectDisplayedPasskey(subparsers)
-    CommandCapability(subparsers)
-
-    parser.usage = '%(prog)s --server\n' + parser.format_usage()
+See org.bluez.Agent1 in bluez5 D-Bus API documentation.''',
+            add_server_option=True,
+            subcommands=[
+                    CommandReleased,
+                    CommandActiveCall,
+                    CommandExpectActiveCall,
+                    CommandFinishActiveCall,
+                    CommandRejectActiveCall,
+                    CommandCancelActiveCall,
+                    CommandDisplayedPasskey,
+                    CommandExpectDisplayedPasskey,
+                    CommandCapability,
+                ])
 
     if '--server' in sys.argv:
         if len(sys.argv) > 2:

@@ -41,23 +41,22 @@ class AvrcpCommand:
         getattr(btts.MediaControl(), self._method)()
 
 # Main argument parser
-main_parser = argparse.ArgumentParser(
-        prog='btts avrcp',
-        description='Audio/Video Remote Control Profile controlling utility.')
-subparsers = main_parser.add_subparsers(
-        dest='subcommand', title='subcommands',
-        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
-            on the given subcommand.''')
-
-AvrcpCommand(subparsers, 'play', 'Play')
-AvrcpCommand(subparsers, 'pause', 'Pause')
-AvrcpCommand(subparsers, 'stop', 'Stop')
-AvrcpCommand(subparsers, 'previous', 'Previous')
-AvrcpCommand(subparsers, 'next', 'Next')
-AvrcpCommand(subparsers, 'rewind', 'Rewind')
-AvrcpCommand(subparsers, 'fast-forward', 'FastForward')
-AvrcpCommand(subparsers, 'volume-up', 'VolumeUp')
-AvrcpCommand(subparsers, 'volume-down', 'VolumeDown')
+main_parser = btts.cliutils.ArgumentParser(
+        prog='avrcp',
+        description='''\
+Audio/Video Remote Control Profile controlling utility.''',
+        add_server_option=False,
+        subcommands=[
+                lambda s: AvrcpCommand(s, 'play', 'Play'),
+                lambda s: AvrcpCommand(s, 'pause', 'Pause'),
+                lambda s: AvrcpCommand(s, 'stop', 'Stop'),
+                lambda s: AvrcpCommand(s, 'previous', 'Previous'),
+                lambda s: AvrcpCommand(s, 'next', 'Next'),
+                lambda s: AvrcpCommand(s, 'rewind', 'Rewind'),
+                lambda s: AvrcpCommand(s, 'fast-forward', 'FastForward'),
+                lambda s: AvrcpCommand(s, 'volume-up', 'VolumeUp'),
+                lambda s: AvrcpCommand(s, 'volume-down', 'VolumeDown'),
+            ])
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 bus = dbus.SystemBus()

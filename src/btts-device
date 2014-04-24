@@ -182,18 +182,17 @@ class CommandRemove:
             raise btts.cliutils.Failure('Device was not removed')
 
 # Main argument parser
-main_parser = argparse.ArgumentParser(
-        prog='btts device',
-        description='Remote device management utility')
-subparsers = main_parser.add_subparsers(
-        dest='subcommand', title='subcommands',
-        help='''Valid subcommands. Pass "<subcommand> --help" to get more help
-            on the given subcommand.''')
-
-CommandExpectAvailable(subparsers)
-CommandExpectUnavailable(subparsers)
-CommandTrust(subparsers)
-CommandRemove(subparsers)
+main_parser = btts.cliutils.ArgumentParser(
+        prog='device',
+        description='''\
+Remote device management utility''',
+        add_server_option=True,
+        subcommands=[
+                CommandExpectAvailable,
+                CommandExpectUnavailable,
+                CommandTrust,
+                CommandRemove,
+            ])
 
 args = main_parser.parse_args()
 if not args.subcommand:
