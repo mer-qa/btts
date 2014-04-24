@@ -18,7 +18,6 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from   contextlib import ContextDecorator
 import dbus
 import sys
 
@@ -38,31 +37,36 @@ def _match_exc(matched_exc, wanted_exc_type):
                 return True
     return False
 
-class failure_on(ContextDecorator):
-    def __init__(self, exc_types):
-        ContextDecorator.__init__(self)
-        self.exc_types = exc_types
+if sys.version_info.major > 2:
+    from contextlib import ContextDecorator
 
-    def __enter__(self):
-        return self
+    class failure_on(ContextDecorator):
+        def __init__(self, exc_types):
+            ContextDecorator.__init__(self)
+            self.exc_types = exc_types
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type and any(map(lambda t: _match_exc(exc_value, t), self.exc_types)):
-            raise Failure(str(exc_value)).with_traceback(traceback)
-        return False
+        def __enter__(self):
+            return self
 
-class bad_usage_on(ContextDecorator):
-    def __init__(self, exc_types):
-        ContextDecorator.__init__(self)
-        self.exc_types = exc_types
+        def __exit__(self, exc_type, exc_value, traceback):
+            if exc_type and any(map(lambda t: _match_exc(exc_value, t),
+                                    self.exc_types)):
+                raise Failure(str(exc_value)).with_traceback(traceback)
+            return False
 
-    def __enter__(self):
-        return self
+    class bad_usage_on(ContextDecorator):
+        def __init__(self, exc_types):
+            ContextDecorator.__init__(self)
+            self.exc_types = exc_types
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type and any(map(lambda t: _match_exc(exc_value, t), self.exc_types)):
-            raise BadUsage(str(exc_value)).with_traceback(traceback)
-        return False
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            if exc_type and any(map(lambda t: _match_exc(exc_value, t),
+                                    self.exc_types)):
+                raise BadUsage(str(exc_value)).with_traceback(traceback)
+            return False
 
 class error_handler:
     def __init__(self, argparser):
