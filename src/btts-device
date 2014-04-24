@@ -23,6 +23,7 @@ import dbus.mainloop.glib
 from   gi.repository import GObject
 import logging
 import sys
+import textwrap
 
 # From bluez's tests
 import bluezutils
@@ -33,13 +34,13 @@ from   btts.cliutils import failure_on, bad_usage_on, error_handler
 log = logging.getLogger(__name__)
 
 class CommandExpectAvailable:
-    '''\
+    _doc = textwrap.dedent('''\
     Expect the remote device to be(come) available.
 
     Can be used e.g. to (1) test availability of the remote device or to (2)
     rediscover the device after it was removed with `remove' command in order to
     unpair it.
-    '''
+    ''')
 
     _REASONABLE_TIMEOUT = 20000 # [ms]
     _NUMBER_TRIES = 3
@@ -47,9 +48,9 @@ class CommandExpectAvailable:
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'expect-available',
-                help='Expect the remote device to be(come) available',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Config.Error])
@@ -77,12 +78,12 @@ class CommandExpectAvailable:
         print(['false', 'true'][device.available])
 
 class CommandExpectUnavailable:
-    '''\
+    _doc = textwrap.dedent('''\
     Expect the remote device to be(come) unavailable.
 
     The way it works is trivial - it removes the device and then performs scan,
     expecting it to not become available again.
-    '''
+    ''')
 
     _REASONABLE_TIMEOUT = 10000 # [ms]
     _NUMBER_TRIES = 2
@@ -90,9 +91,9 @@ class CommandExpectUnavailable:
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'expect-unavailable',
-                help='Expect the remote device to be(come) unavailable',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Config.Error])
@@ -117,18 +118,18 @@ class CommandExpectUnavailable:
         print(['false', 'true'][not device.available])
 
 class CommandTrust:
-    '''\
+    _doc = textwrap.dedent('''\
     Get/Set the device as trusted
 
     See org.bluez.Device1.Trusted property in bluez5 D-Bus API documentation.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'trusted',
-                help='Get/Set the device as trusted',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('trusted', nargs='?', type=btts.cliutils.boolean,
                             help='Device trusted state (true|false)')
         parser.set_defaults(handler=self)
@@ -144,23 +145,23 @@ class CommandTrust:
             # TODO: wait for change
 
 class CommandRemove:
-    '''\
+    _doc = textwrap.dedent('''\
     Remove the remote device and associated pairing information.
 
     Main use is to unpair the device. The device can be then rediscovered with
     the `inquiry' command.
 
     See org.bluez.Adapter1.RemoveDevice() in bluez5 D-Bus API documentation.
-    '''
+    ''')
 
     _REASONABLE_TIMEOUT = 5000 # [ms]
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'remove',
-                help='Remove the remote device and associated pairing information',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Config.Error])
@@ -182,10 +183,12 @@ class CommandRemove:
             raise btts.cliutils.Failure('Device was not removed')
 
 # Main argument parser
+description='''\
+Remote Bluetooth device management utility'''
+
 main_parser = btts.cliutils.ArgumentParser(
         prog='device',
-        description='''\
-Remote device management utility''',
+        description=description,
         add_server_option=True,
         subcommands=[
                 CommandExpectAvailable,

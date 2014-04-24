@@ -21,26 +21,27 @@ import argparse
 import dbus
 import dbus.mainloop.glib
 import sys
+import textwrap
 
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
 
 class CommandPowered:
-    '''\
+    _doc = textwrap.dedent('''\
     Get/Set adapter powered state.
 
     With no argument it prints "true" or "false" to indicate current adapter
     state.
 
     This is equivalent to access the org.bluez.Adapter1.Powered D-Bus property.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'powered',
-                help='Get/Set adapter powered state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('powered', nargs='?', type=btts.cliutils.boolean,
                             help='Adapter powered state (true|false)')
         parser.set_defaults(handler=self)
@@ -57,24 +58,25 @@ class CommandPowered:
             # TODO: wait for change
 
 class CommandDiscoverable:
-    '''\
+    _doc = textwrap.dedent('''\
     Get/Set adapter discoverable state.
 
     With no argument it prints "true" or "false" to indicate current adapter
     state.
 
-    This is equivalent to access the org.bluez.Adapter1.Discoverable D-Bus property.
+    This is equivalent to access the org.bluez.Adapter1.Discoverable D-Bus
+    property.
 
     When setting discoverable state to true, the discoverable timeout is set to
     infinite (setting org.bluez.Adapter1.DiscoverableTimeout)
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'discoverable',
-                help='Get/Set adapter discoverable state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('discoverable', nargs='?', type=btts.cliutils.boolean,
                             help='Adapter discoverable state (true|false)')
         parser.set_defaults(handler=self)
@@ -91,19 +93,19 @@ class CommandDiscoverable:
             # TODO: wait for change
 
 class CommandHasFeature:
-    '''\
+    _doc = textwrap.dedent('''\
     Test adapter features.
 
     It prints "true" or "false" to indicate if adapter implements the given
     feature.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'has-feature',
-                help='Test adapter features',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('feature', type=str,
                             choices=btts.Adapter.FEATURES,
                             help='Feature to test for.')
@@ -115,10 +117,12 @@ class CommandHasFeature:
         print(["false", "true"][adapter.has_feature(args.feature)])
 
 # Main argument parser
+description='''\
+Local Bluetooth adapter controlling utility.'''
+
 main_parser = btts.cliutils.ArgumentParser(
         prog='adapter',
-        description='''\
-Adapter controlling utility.''',
+        description=description,
         add_server_option=False,
         subcommands=[
                 CommandPowered,

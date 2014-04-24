@@ -27,6 +27,7 @@ from   gi.repository import GObject
 import logging
 import signal
 import sys
+import textwrap
 
 # From bluez's tests
 import bluezutils
@@ -164,43 +165,43 @@ class PairingTool(dbus.service.Object):
         self.device_path = None
 
 class CommandPair:
-    '''\
+    _doc = textwrap.dedent('''\
     Initiate pairing.
 
     See org.bluez.Device1.Pair() in the bluez5 D-Bus API documentation.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'pair',
-                help='Initiate pairing',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, tool, args):
         tool.Pair(btts.Config().device)
 
 class CommandCancel:
-    '''\
+    _doc = textwrap.dedent('''\
     Cancel pairing.
 
     See org.bluez.Device1.CancelPairing() in the bluez5 D-Bus API documentation.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'cancel',
-                help='Cancel pairing',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, tool, args):
         tool.Cancel()
 
 class CommandState:
-    '''\
+    _doc = textwrap.dedent('''\
     Get state.
 
     Possible states:
@@ -212,32 +213,32 @@ class CommandState:
         cancelling     cancel operation in progress
         cancelled      cancel operation successfully finished
         cancel-failed  cancel operation failed
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'state',
-                help='Get state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, tool, args):
         print(tool.GetState())
 
 class CommandExpectState:
-    '''\
+    _doc = textwrap.dedent('''\
     Verify state change - waiting.
 
     Also see `state'
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'expect-state',
-                help='Verify state change - waiting',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('state', type=self.state,
                             help='Expected state')
         parser.add_argument('timeout', nargs='?', type=int, default=35,
@@ -272,18 +273,18 @@ class CommandExpectState:
 
 
 class CommandErrorName:
-    '''\
+    _doc = textwrap.dedent('''\
     Get the last received D-Bus error name.
 
     Until in "Failed" or "CancelFailed" state, it returns the string "No error"
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'error-name',
-                help='Get the last received D-Bus error name',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, tool, args):
@@ -291,16 +292,16 @@ class CommandErrorName:
 
 
 class CommandReset:
-    '''\
+    _doc = textwrap.dedent('''\
     Reset the tool to its initial state.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'reset',
-                help='Reset the tool to its initial state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, tool, args):
@@ -312,10 +313,12 @@ if __name__ == '__main__':
 
     bus = dbus.SystemBus()
 
+    description='''\
+Bluez pairing tool with non-interactive command line user interface.'''
+
     parser = btts.cliutils.ArgumentParser(
             prog='pairing',
-            description='''\
-Bluez pairing tool with non-interactive command line user interface.''',
+            description=description,
             add_server_option=True,
             subcommands=[
                     CommandPair,

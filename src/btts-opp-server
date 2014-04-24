@@ -25,6 +25,7 @@ import hashlib
 import logging
 import os
 import sys
+import textwrap
 import xdg.BaseDirectory
 
 import btts
@@ -228,7 +229,7 @@ class Server(dbus.service.Object):
 #            config.set_profile_enabled('opp', args.enabled)
 
 class CommandAuthState:
-    '''\
+    _doc = textwrap.dedent('''\
     Get authorization state.
 
     Possible states:
@@ -241,14 +242,14 @@ class CommandAuthState:
         rejected       transfer has been rejected
         cancelled      transfer was cancelled before authorization request was
                        replied
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'auth-state',
-                help='Get authorization state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([Server.Error])
@@ -256,18 +257,18 @@ class CommandAuthState:
         print(server.GetAuthState())
 
 class CommandExpectAuthState:
-    '''\
+    _doc = textwrap.dedent('''\
     Verify authorization state change - waiting.
 
     Also see `auth-state'
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'expect-auth-state',
-                help='Verify authorization state change - waiting',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('state', type=str,
                             help='Expected state')
         parser.add_argument('timeout', nargs='?', type=int, default=10,
@@ -297,16 +298,16 @@ class CommandExpectAuthState:
         print(['false', 'true'][state == [args.state]])
 
 class CommandAuthAccept:
-    '''\
+    _doc = textwrap.dedent('''\
     Accept the requested transfer.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'auth-accept',
-                help='Accept the requested transfer',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([Server.Error])
@@ -314,16 +315,16 @@ class CommandAuthAccept:
         server.AcceptAuthRequest()
 
 class CommandAuthReject:
-    '''\
+    _doc = textwrap.dedent('''\
     Reject the requested transfer.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'auth-reject',
-                help='Reject the requested transfer',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([Server.Error])
@@ -331,7 +332,7 @@ class CommandAuthReject:
         server.RejectAuthRequest()
 
 class CommandXferState:
-    '''\
+    _doc = textwrap.dedent('''\
     Get transfer state.
 
     Possible states:
@@ -343,14 +344,14 @@ class CommandXferState:
         finished       transfer successfully finished
         cancelled      cancel operation successfully finished
         failed         failed
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'xfer-state',
-                help='Get transfer state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([Server.Error])
@@ -358,18 +359,18 @@ class CommandXferState:
         print(server.GetXferState())
 
 class CommandExpectXferState:
-    '''\
+    _doc = textwrap.dedent('''\
     Verify transfer state change - waiting.
 
     Also see `xfer-state'
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'expect-xfer-state',
-                help='Verify transfer state change - waiting',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('state', type=str,
                             help='Expected state')
         parser.add_argument('timeout', nargs='?', type=int, default=10,
@@ -399,16 +400,16 @@ class CommandExpectXferState:
         print(['false', 'true'][state == [args.state]])
 
 class CommandXferCancel:
-    '''\
+    _doc = textwrap.dedent('''\
     Cancel current transfer.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'xfer-cancel',
-                help='Cancel current transfer',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([Server.Error])
@@ -416,16 +417,16 @@ class CommandXferCancel:
         server.CancelTransfer()
 
 class CommandSha1:
-    '''\
+    _doc = textwrap.dedent('''\
     Compute SHA-1 hash of the received object.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'sha1',
-                help='Compute SHA-1 hash of the received object',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, server, args):
@@ -438,10 +439,12 @@ class CommandSha1:
             raise btts.cliutils.Failure('No object received yet')
 
 # Main argument parser
+description='''\
+Object Push Profile server utility.'''
+
 main_parser = btts.cliutils.ArgumentParser(
         prog='opp-server',
-        description='''\
-Object Push Profile server utility.''',
+        description=description,
         add_server_option=True,
         subcommands=[
                 #CommandEnabled,

@@ -21,26 +21,27 @@ import argparse
 import dbus
 import dbus.mainloop.glib
 import sys
+import textwrap
 
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
 
 class CommandAdapter:
-    '''\
+    _doc = textwrap.dedent('''\
     Get/Set adapter to work with.
 
     Device aliases can be defined in /etc/btts/adapters.  Content of this file
     is newline separated list of records.  Each record consists of a space
     separated pair of <bd_address> and <alias>. Lines starting with "#" are
     ignored.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'adapter',
-                help='Get/Set adapter to work with',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         group = parser.add_mutually_exclusive_group()
         group.add_argument(
                 '--raw-device', action='store_true',
@@ -69,7 +70,7 @@ class CommandAdapter:
             config.adapter = args.adapter
 
 class CommandHostAlias:
-    '''\
+    _doc = textwrap.dedent('''\
     Get/Set name to be always used by the selected adapter.
 
     This is the same as to access the org.bluez.Adapter1.Alias bluez5 D-Bus API
@@ -80,14 +81,14 @@ class CommandHostAlias:
     always just one device with the given alias available on the network. Also
     the previously selected adapter is automaticaly powered off. The newly
     selected adapter's powered state is not touched.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'host-alias',
-                help='Get/Set name to be always used by the selected adapter',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument(
                 'alias', nargs='?', type=str,
                 help='Host alias. Pass empty string to reset adapter alias.')
@@ -107,16 +108,16 @@ class CommandHostAlias:
             config.host_alias = args.alias
 
 class CommandDevice:
-    '''\
+    _doc = textwrap.dedent('''\
     Get/Set the remote device to work with.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'device',
-                help='Get/Set the remote device to work with',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument(
                 'device', nargs='?', type=str,
                 help='Device address')
@@ -133,10 +134,12 @@ class CommandDevice:
             config.device = args.device
 
 # Main argument parser
+description='''\
+Bluetooth Test Suite configuration and management utility.'''
+
 main_parser = btts.cliutils.ArgumentParser(
         prog='config',
-        description='''\
-Bluetooth Test Suite configuration and management utility.''',
+        description=description,
         add_server_option=False,
         subcommands=[
                 CommandAdapter,

@@ -22,6 +22,7 @@ import dbus
 import dbus.mainloop.glib
 from   gi.repository import GObject
 import sys
+import textwrap
 
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
@@ -44,18 +45,18 @@ class Server(dbus.service.Object):
     # TODO
 
 class CommandEnabled:
-    '''\
+    _doc = textwrap.dedent('''\
     Get/Set profile enabled state.
 
     With no argument it prints "true" or "false" to indicate current state.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'enabled',
-                help='Get/Set profile enabled state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument(
                 'enabled', nargs='?', type=btts.cliutils.boolean,
                 help='Profile enabled state (true|false)')
@@ -72,17 +73,16 @@ class CommandEnabled:
             config.set_profile_enabled('hfp', args.enabled)
 
 class CommandDial:
-    '''\
+    _doc = textwrap.dedent('''\
     Initiate a new outgoing call.
-
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'dial',
-                help='Initiate a new outgoing call',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument(
                 'number', type=str,
                 help='Phone number to dial')
@@ -102,17 +102,16 @@ class CommandDial:
         voice_call.Dial(args.number, hide_callerid)
 
 class CommandAnswer:
-    '''\
+    _doc = textwrap.dedent('''\
     Answer an incomming call.
-
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'answer',
-                help='Answer an incomming call',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Config.Error, btts.VoiceCall.Error])
@@ -121,17 +120,16 @@ class CommandAnswer:
         voice_call.ReleaseAndAnswer()
 
 class CommandHangup:
-    '''\
+    _doc = textwrap.dedent('''\
     Hangup an active call.
-
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'hangup',
-                help='Hangup an active call',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Config.Error, btts.VoiceCall.Error])
@@ -140,18 +138,18 @@ class CommandHangup:
         voice_call.HangupAll()
 
 class CommandReceivingAudio:
-    '''\
+    _doc = textwrap.dedent('''\
     Test if receiving audio right now.
 
     It prints "true" or "false" to indicate current state.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'receiving-audio',
-                help='Test if receiving audio right now',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Config.Error])
@@ -159,7 +157,7 @@ class CommandReceivingAudio:
         print(['false', 'true'][btts.Recorder.receiving_audio()])
 
 class CommandPlayBackAndVerifyEcho:
-    '''\
+    _doc = textwrap.dedent('''\
     Play back an audio sample and match it with the echo.
 
     Assuming the HFP gateway has dialed an "echo service", it starts playing
@@ -169,14 +167,14 @@ class CommandPlayBackAndVerifyEcho:
 
     Prints "true" or "false" to indicate if the recorded echo matches the
     played back sample.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'play-back-and-verify-echo',
-                help='Play back an audio sample and match it with the echo',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Player.Error, btts.Recorder.Error])
@@ -198,10 +196,12 @@ class CommandPlayBackAndVerifyEcho:
         print(['false', 'true'][message.strip() == SAMPLE_MESSAGE])
 
 # Main argument parser
+description='''\
+Hands-Free Profile controlling utility.'''
+
 main_parser = btts.cliutils.ArgumentParser(
         prog='hfp',
-        description='''\
-Hands-Free Profile controlling utility.''',
+        description=description,
         add_server_option=True,
         subcommands=[
                 CommandEnabled,

@@ -27,6 +27,7 @@ from   gi.repository import GObject
 import logging
 import signal
 import sys
+import textwrap
 
 import btts
 from   btts.utils import dbus_service_method, dbus_service_signal
@@ -341,27 +342,27 @@ class Agent(dbus.service.Object):
         self.manager.RequestDefaultAgent(self.__dbus_object_path__)
 
 class CommandReleased:
-    '''\
+    _doc = textwrap.dedent('''\
     Test whether the agent was released.
 
     Prints "true" or "false".
 
     See org.bluez.Agent1.Release() in bluez5 D-Bus API documentation.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'released',
-                help='Test whether the agent was released',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, agent, args):
         print(['false', 'true'][agent.IsReleased()])
 
 class CommandActiveCall:
-    '''\
+    _doc = textwrap.dedent('''\
     Get active call.
 
     Prints the name of the active D-Bus call on the org.bluez.Agent1 interface
@@ -383,14 +384,14 @@ class CommandActiveCall:
 
     To finish a waiting call, see `finish-active-call', `reject-active-call'
     and `cancel-active-call'.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'active-call',
-                help='Get active call',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('--get-arg', type=str,
                             help='Instead of call name, get value of \
                                   the given argument')
@@ -403,7 +404,7 @@ class CommandActiveCall:
             print(agent.GetActiveCall()[1][args.get_arg])
 
 class CommandExpectActiveCall:
-    '''\
+    _doc = textwrap.dedent('''\
     Verify active call change - waiting.
 
     Verifies the name of the active D-Bus call on the org.bluez.Agent1
@@ -412,14 +413,14 @@ class CommandExpectActiveCall:
     change.
 
     Also see `active-call'
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'expect-active-call',
-                help='Verify active call change - waiting',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('call', type=str,
                             help='Expected call')
         parser.add_argument('timeout', nargs='?', type=int, default=5,
@@ -449,19 +450,19 @@ class CommandExpectActiveCall:
         print(['false', 'true'][active_call == [args.call]])
 
 class CommandFinishActiveCall:
-    '''\
+    _doc = textwrap.dedent('''\
     Finish active call (also see `active-call').
 
     Some calls expect result argument. See the API documentation of the
     respective org.bluez.Agent1 methods in bluez5 D-Bus API.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'finish-active-call',
-                help='Finish active call',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('result', nargs='?', type=str,
                             help='Value to return from the active call.')
         parser.set_defaults(handler=self)
@@ -470,84 +471,84 @@ class CommandFinishActiveCall:
         agent.FinishActiveCall(args.result)
 
 class CommandRejectActiveCall:
-    '''\
+    _doc = textwrap.dedent('''\
     Reject active call (also see `active-call').
 
     I.e. finish the call by issuing org.bluez.Error.Rejected D-Bus error.
 
     See the API documentation of the respective org.bluez.Agent1 methods in
     bluez5 D-Bus API for allowed errors.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'reject-active-call',
-                help='Reject active call',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, agent, args):
         agent.RejectActiveCall()
 
 class CommandCancelActiveCall:
-    '''\
+    _doc = textwrap.dedent('''\
     Cancel active call (also see `active-call').
 
     I.e. finish the call by issuing org.bluez.Error.Canceled D-Bus error.
 
     See the API documentation of the respective org.bluez.Agent1 methods in
     bluez5 D-Bus API for allowed errors.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'cancel-active-call',
-                help='Cancel active call',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, agent, args):
         agent.CancelActiveCall()
 
 class CommandDisplayedPasskey:
-    '''\
+    _doc = textwrap.dedent('''\
     Get displayed passkey.
 
     It prints the `passkey' and `entered' arguments separated with single
     space.
 
     See org.bluez.Agent1.DisplayPasskey() in bluez5 D-Bus API documentation.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'displayed-passkey',
-                help='Get displayed passkey',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, agent, args):
         print(agent.GetDisplayedPasskey())
 
 class CommandExpectDisplayedPasskey:
-    '''\
+    _doc = textwrap.dedent('''\
     Verify displayed passkey - waiting.
 
     It verifies the `passkey' and `enterred' arguments, waiting for a
     maximum of the given amount of time.
 
     See org.bluez.Agent1.DisplayPasskey() in bluez5 D-Bus API documentation.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'verify-displayed-passkey',
-                help='Verify displayed passkey - waiting',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('passkey', type=int,
                             help='Expected passkey argument value')
         parser.add_argument('entered', type=int,
@@ -579,7 +580,7 @@ class CommandExpectDisplayedPasskey:
 
 
 class CommandCapability:
-    '''\
+    _doc = textwrap.dedent('''\
     Get/Set agent capability.
 
     With no argument it prints agent's current capability.
@@ -588,14 +589,14 @@ class CommandCapability:
     reseting its internal state to initial.
 
     See org.bluez.Agent1 in bluez5 D-Bus API documentation.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'capability',
-                help='Get/Set agent capability',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument(
                 'capability', nargs='?', type=str,
                 help='Agent capability')
@@ -608,19 +609,19 @@ class CommandCapability:
             agent.SetCapability(args.capability)
 
 class CommandReset:
-    '''\
+    _doc = textwrap.dedent('''\
     Reset agent state.
 
     Agent is unregistered and registered again, active-call is reset to
     'NoCall'.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'reset',
-                help='Reset agent state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, agent, args):
@@ -632,12 +633,14 @@ if __name__ == '__main__':
 
     bus = dbus.SystemBus()
 
-    parser = btts.cliutils.ArgumentParser(
-            prog='agent',
-            description='''\
+    description='''\
 Bluez agent with non-interactive command line user interface.
 
-See org.bluez.Agent1 in bluez5 D-Bus API documentation.''',
+See org.bluez.Agent1 in bluez5 D-Bus API documentation.'''
+
+    parser = btts.cliutils.ArgumentParser(
+            prog='agent',
+            description=description,
             add_server_option=True,
             subcommands=[
                     CommandReleased,

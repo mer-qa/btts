@@ -22,6 +22,7 @@ import dbus
 import dbus.mainloop.glib
 from   gi.repository import GObject
 import sys
+import textwrap
 
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
@@ -55,18 +56,18 @@ class Server(dbus.service.Object):
         self._recorder.wait()
 
 class CommandEnabled:
-    '''\
+    _doc = textwrap.dedent('''\
     Get/Set profile enabled state.
 
     With no argument it prints "true" or "false" to indicate current state.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'enabled',
-                help='Get/Set profile enabled state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument(
                 'enabled', nargs='?', type=btts.cliutils.boolean,
                 help='Profile enabled state (true|false)')
@@ -83,18 +84,18 @@ class CommandEnabled:
             config.set_profile_enabled('a2dp', args.enabled)
 
 class CommandReceivingAudio:
-    '''\
+    _doc = textwrap.dedent('''\
     Test if receiving audio right now.
 
     It prints "true" or "false" to indicate current state.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'receiving-audio',
-                help='Test if receiving audio right now',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Config.Error])
@@ -102,18 +103,18 @@ class CommandReceivingAudio:
         print(['false', 'true'][btts.Recorder.receiving_audio()])
 
 class CommandSetSample:
-    '''\
+    _doc = textwrap.dedent('''\
     Set sample to match the recorded/played audio against.
 
     The audio sample is read from stdin.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'set-sample',
-                help='Set sample to match the recorded/played audio against',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, server, args):
@@ -125,7 +126,7 @@ class CommandSetSample:
             sample_code_file.write(code)
 
 class CommandAsyncRecordAndVerify:
-    '''\
+    _doc = textwrap.dedent('''\
     Asynchronously record and match audio against the stored sample.
 
     It will try to record exactly `duration' seconds of received audio data
@@ -133,14 +134,14 @@ class CommandAsyncRecordAndVerify:
     with `set-sample` command.
 
     Use `async-record-and-verify-wait` to query the result.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'async-record-and-verify',
-                help='Asynchronously record and match audio against the stored sample',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('duration', nargs='?', type=int, default=20,
                             help='Record duration [secs]')
         parser.set_defaults(handler=self)
@@ -150,7 +151,7 @@ class CommandAsyncRecordAndVerify:
         server.StartRecord(args.duration)
 
 class CommandAsyncRecordAndVerifyWait:
-    '''\
+    _doc = textwrap.dedent('''\
     Wait for async-record-and-verify to complete and print its result.
 
     This command blocks until the asynchronous procedure started with
@@ -160,14 +161,14 @@ class CommandAsyncRecordAndVerifyWait:
     stored sample.
 
     Exits with non zero when audio of the given duration cannot be recorded.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'async-record-and-verify-wait',
-                help='Wait for async-record-and-verify to complete and print its result',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([btts.Recorder.Error])
@@ -184,7 +185,7 @@ class CommandAsyncRecordAndVerifyWait:
         print(['false', 'true'][ok])
 
 class CommandRecordAndVerify:
-    '''\
+    _doc = textwrap.dedent('''\
     Record and match audio against the stored sample.
 
     It will try to record exactly `duration' seconds of received audio data
@@ -195,14 +196,14 @@ class CommandRecordAndVerify:
     stored sample.
 
     Exits with non zero when audio of the given duration cannot be recorded.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'record-and-verify',
-                help='Record and match audio against stored sample',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('duration', nargs='?', type=int, default=20,
                             help='Record duration [secs]')
         parser.set_defaults(handler=self)
@@ -224,20 +225,20 @@ class CommandRecordAndVerify:
         print(['false', 'true'][ok])
 
 class CommandVerify:
-    '''\
+    _doc = textwrap.dedent('''\
     Match audio against the stored sample.
 
     The audio data is read from stdin.
 
     Prints "true" or "false" to indicate the result.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'verify',
-                help='Match audio against stored sample',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, server, args):
@@ -254,10 +255,12 @@ class CommandVerify:
         print(['false', 'true'][ok])
 
 # Main argument parser
+description='''\
+Advanced Audio Distribution Profile controlling utility.'''
+
 main_parser = btts.cliutils.ArgumentParser(
         prog='a2dp',
-        description='''\
-Advanced Audio Distribution Profile controlling utility.''',
+        description=description,
         add_server_option=True,
         subcommands=[
                 CommandEnabled,

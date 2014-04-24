@@ -24,6 +24,7 @@ from   gi.repository import GObject
 import logging
 import os
 import sys
+import textwrap
 
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
@@ -202,7 +203,7 @@ class Server(dbus.service.Object):
 #            config.set_profile_enabled('opp', args.enabled)
 
 class CommandState:
-    '''\
+    _doc = textwrap.dedent('''\
     Get state.
 
     Possible states:
@@ -214,32 +215,32 @@ class CommandState:
         finished       transfer successfully finished
         cancelled      cancel operation successfully finished
         failed         failed
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'state',
-                help='Get state',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     def __call__(self, server, args):
         print(server.GetState())
 
 class CommandExpectState:
-    '''\
+    _doc = textwrap.dedent('''\
     Verify state change - waiting.
 
     Also see `state'
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'expect-state',
-                help='Verify state change - waiting',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('state', type=str,
                             help='Expected state')
         parser.add_argument('timeout', nargs='?', type=int, default=10,
@@ -269,18 +270,18 @@ class CommandExpectState:
         print(['false', 'true'][state == [args.state]])
 
 class CommandSetObject:
-    '''\
+    _doc = textwrap.dedent('''\
     Set object to test 'put' with.
 
     The data is read from stdin.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'set-object',
-                help='Set object to test "put" with',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.add_argument('file_name', type=str,
                             help=('File name for the object (may be used for '
                                   + 'content type detection)'))
@@ -297,16 +298,16 @@ class CommandSetObject:
                                 PUT_OBJECT_MAX_SIZE)
 
 class CommandPut:
-    '''\
+    _doc = textwrap.dedent('''\
     Put a file onto the server.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'put',
-                help='Put a file onto the server',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([Server.Error])
@@ -314,16 +315,16 @@ class CommandPut:
         server.Put()
 
 class CommandCancel:
-    '''\
+    _doc = textwrap.dedent('''\
     Cancel current transfer.
-    '''
+    ''')
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
                 'cancel',
-                help='Cancel current transfer',
+                help=self._doc.splitlines()[0],
                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                description=self.__doc__)
+                description=self._doc)
         parser.set_defaults(handler=self)
 
     @failure_on([Server.Error])
@@ -331,10 +332,12 @@ class CommandCancel:
         server.Cancel()
 
 # Main argument parser
+description='''\
+Object Push Profile client utility.'''
+
 main_parser = btts.cliutils.ArgumentParser(
         prog='opp-client',
-        description='''\
-Object Push Profile client utility.''',
+        description=description,
         add_server_option=True,
         subcommands=[
                 #CommandEnabled,

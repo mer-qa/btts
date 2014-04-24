@@ -22,6 +22,7 @@ import dbus
 import dbus.mainloop.glib
 from   gi.repository import GObject
 import sys
+import textwrap
 
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
@@ -41,10 +42,12 @@ class AvrcpCommand:
         getattr(btts.MediaControl(), self._method)()
 
 # Main argument parser
+description='''\
+Audio/Video Remote Control Profile controlling utility.'''
+
 main_parser = btts.cliutils.ArgumentParser(
         prog='avrcp',
-        description='''\
-Audio/Video Remote Control Profile controlling utility.''',
+        description=description,
         add_server_option=False,
         subcommands=[
                 lambda s: AvrcpCommand(s, 'play', 'Play'),
