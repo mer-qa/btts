@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-visibility">
+    <description>
+        BTTS T 10 Basic - Visibility
+
+        Test visibility
+    </description>
+
+    <step manual="false">
+        bttsr device remove
+    </step>
+    <step manual="false">
+        bttsr --expect "true" device expect-available
+    </step>
+    <step>
+        PHONE: Disable visibility
+    </step>
+    <step manual="false">
+        bttsr --expect "true" device expect-unavailable
+    </step>
+    <step>
+        PHONE: Enable visibility
+    </step>
+    <step manual="false">
+        bttsr --expect "true" device expect-available
+    </step>
+    <step>
+        PHONE: Disable Bluetooth
+    </step>
+    <step manual="false">
+        bttsr --expect "true" device expect-unavailable
+    </step>
+    <step>
+        PHONE: Enable Bluetooth
+    </step>
+    <step manual="false">
+        bttsr --expect "true" device expect-available
+    </step>
+</case>

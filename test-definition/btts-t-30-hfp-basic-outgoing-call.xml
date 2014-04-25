@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-30-hfp-basic-outgoing-call">
+    <description>
+        BTTS T 30 HFP - Basic Outgoing Call
+
+        Test handsfree - dialing on the HF side.
+    </description>
+
+    <step>
+        PHONE: Ensure Bluetooth audio is connected
+    </step>
+    <step>
+        BTTS: Dial an echo-test number with:
+
+            bttsr hfp dial &lt;phone-number&gt;
+    </step>
+    <step>
+        PHONE: Verify it is dialling
+    </step>
+    <step>
+        PHONE: Verify call is in progress
+    </step>
+    <step>
+        PHONE: Wait until the intro message finishes
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp receiving-audio
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp play-back-and-verify-echo
+    </step>
+    <step manual="false">
+        bttsr hfp hangup
+    </step>
+    <step>
+        PHONE: Verify call ended
+    </step>
+</case>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<set name="btts-s-30-hfp"
+    xmlns:xi="http://www.w3.org/2001/XInclude">
+    <description>
+        BTTS S 30 HFP
+
+        Test HFP profile related functionality.
+    </description>
+
+    <pre_steps>
+        <step>
+            PHONE: Ensure it is paired with the BTTS node device
+        </step>
+        <step>
+            PHONE: Ensure sound volume is near its upper end
+        </step>
+    </pre_steps>
+
+    <xi:include href="btts-t-30-hfp-basic-call.xml"/>
+
+    <xi:include href="btts-t-30-hfp-switch-audio-internal-initially.xml"/>
+    <xi:include href="btts-t-30-hfp-switch-audio-internal-initially-auto-hf.xml"/>
+    <xi:include href="btts-t-30-hfp-switch-audio-hf-initially.xml"/>
+
+    <xi:include href="btts-t-30-hfp-basic-outgoing-call.xml"/>
+    <xi:include href="btts-t-30-hfp-basic-incoming-call.xml"/>
+</set>

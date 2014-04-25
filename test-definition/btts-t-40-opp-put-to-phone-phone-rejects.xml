@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-40-opp-put-to-phone-phone-rejects">
+    <description>
+        BTTS T 40 OPP - Put to Phone - Phone Rejects
+
+        Test OPP "put" from the other device to the phone.
+
+            - The phone rejects the transfer
+    </description>
+
+    <step>
+        BTTS: Ensure a test object (a file) is available on this host. It
+        should be big enought to guarantee a useful transfer time.
+    </step>
+    <step>
+        Set object to test with with:
+
+            bttsr opp-client set-object &lt;file_name&gt; &lt; &lt;file_path&gt;
+    </step>
+    <step manual="false">
+        bttsr opp-client put
+    </step>
+    <step>
+        PHONE: Verify an incoming transfer is reported
+    </step>
+    <step>
+        PHONE: Reject the incoming transfer
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-client expect-state "failed"
+    </step>
+    <step>
+        PHONE: Verify the operation has been interrupted.
+    </step>
+</case>

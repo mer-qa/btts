@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<set name="btts-s-50-avrcp"
+    xmlns:xi="http://www.w3.org/2001/XInclude">
+    <description>
+        BTTS S 50 AVRCP
+
+        Test AVRCP profile related functionality.
+    </description>
+
+    <pre_steps>
+        <step>
+            PHONE: Ensure it is paired with the BTTS node device
+        </step>
+        <step>
+            PHONE: Ensure Bluetooth audio is connected
+        </step>
+        <step>
+            PHONE: Ensure sample audio file(s) are available
+        </step>
+    </pre_steps>
+
+    <xi:include href="btts-t-50-avrcp-basic-control.xml"/>
+</set>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-pair-displayonly">
+    <description>
+        BTTS T 10 Basic - Pair (DisplayOnly)
+
+        Test pairing.
+
+            - Other device with IO capability "DisplayOnly".
+    </description>
+
+    <step>
+        PHONE: Ensure it is not paired with the BTTS node device (unpair if
+        necessary).
+    </step>
+    <step manual="false">
+        bttsr agent capability DisplayOnly
+    </step>
+    <step>
+        PHONE: Initiate pairing
+    </step>
+    <step manual="false">
+        bttsr --expect "true" agent expect-active-call RequestConfirmationCall
+    </step>
+    <step>
+        BTTS: Verify the passkey is the same as the one displayed on the phone.
+
+        Get the passkey with:
+
+            bttsr agent active-call --get-arg passkey
+    </step>
+    <step manual="false">
+        bttsr agent finish-active-call ''
+    </step>
+    <step>
+        PHONE: Verify pairing succeeded
+    </step>
+    <step>
+        PHONE: Unpair
+    </step>
+</case>

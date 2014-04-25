@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-30-hfp-switch-audio-hf-initially">
+    <description>
+        BTTS T 30 HFP - Switch Audio - HF Initially
+
+        Test handsfree - switch audio between the Bluetooth handsfree audio and
+        the internal microphone & speaker.
+
+        1. Start with Bluetooth audio connected
+        2. Start call
+        3. Switch to the internal audio
+        4. Switch back to the HF
+        5. Switch to the internal audio again
+    </description>
+
+    <step>
+        PHONE: Ensure Bluetooth audio is connected
+    </step>
+    <step>
+        PHONE: Dial an echo-test number, wait until the intro message finishes
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp receiving-audio
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp play-back-and-verify-echo
+    </step>
+
+    <step>
+        PHONE: Switch call audio from the HF to the internal microphone & speaker
+    </step>
+    <step manual="false">
+        bttsr --expect "false" hfp receiving-audio
+    </step>
+
+    <step>
+        PHONE: Switch call audio from the internal microphone & speaker to the HF
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp receiving-audio
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp play-back-and-verify-echo
+    </step>
+    <step>
+        PHONE: End call
+    </step>
+</case>

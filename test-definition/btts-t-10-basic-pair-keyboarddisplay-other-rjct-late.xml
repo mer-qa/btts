@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-pair-keyboarddisplay-other-rjct-late">
+    <description>
+        BTTS T 10 Basic - Pair (KeyboardDisplay) Other Rejects Late
+
+        Test pairing.
+
+            - Other device with IO capability "KeyboardDisplay".
+            - Other device rejects pairing BEFORE it is accepted on phone.
+    </description>
+
+    <step>
+        PHONE: Ensure it is not paired with the BTTS node device (unpair if
+        necessary).
+    </step>
+    <step manual="false">
+        bttsr agent capability KeyboardDisplay
+    </step>
+    <step>
+        PHONE: Initiate pairing
+    </step>
+    <step manual="false">
+        bttsr --expect "true" agent expect-active-call "RequestConfirmationCall"
+    </step>
+    <step>
+        BTTS: Verify the passkey is the same as the one displayed on the phone.
+
+        Get the passkey with:
+
+            bttsr agent active-call --get-arg passkey
+    </step>
+    <step>
+        PHONE: Accept pairing
+    </step>
+    <step manual="false">
+        bttsr agent reject-active-call
+    </step>
+    <step>
+        PHONE: Verify an appropriate message has been displayed
+    </step>
+    <step>
+        PHONE: Verify it is NOT paired
+    </step>
+</case>

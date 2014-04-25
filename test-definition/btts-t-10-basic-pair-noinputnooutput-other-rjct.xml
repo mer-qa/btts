@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-pair-noinputnooutput-other-rjct">
+    <description>
+        BTTS T 10 Basic - Pair (NoInputNoOutput) Other Rejects
+
+        Test pairing.
+
+            - Other device with IO capability "NoInputNoOutput".
+            - Other device rejects pairing BEFORE it is accepted on phone.
+    </description>
+
+    <step>
+        PHONE: Ensure it is not paired with the BTTS node device (unpair if
+        necessary).
+    </step>
+    <step manual="false">
+        bttsr agent capability NoInputNoOutput
+    </step>
+    <step>
+        PHONE: Initiate pairing
+    </step>
+    <step manual="false">
+        sleep 3
+    </step>
+    <step manual="false">
+        bttsr --expect "true" agent expect-active-call "RequestAuthorizationCall"
+    </step>
+    <step manual="false">
+        bttsr agent reject-active-call
+    </step>
+    <step>
+        PHONE: Verify an appropriate message has been displayed
+    </step>
+    <step>
+        PHONE: Verify it is NOT paired
+    </step>
+</case>

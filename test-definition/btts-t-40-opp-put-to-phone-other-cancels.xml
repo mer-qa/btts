@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-40-opp-put-to-phone-other-cancels">
+    <description>
+        BTTS T 40 OPP - Put to Phone - Other Cancels
+
+        Test OPP "put" from the other device to the phone.
+
+            - The other device cancels the transfer before it ends
+    </description>
+
+    <step>
+        BTTS: Ensure a test object (a file) is available on this host. It
+        should be big enought to guarantee a useful transfer time.
+    </step>
+    <step>
+        Set object to test with with:
+
+            bttsr opp-client set-object &lt;file_name&gt; &lt; &lt;file_path&gt;
+    </step>
+    <step manual="false">
+        bttsr opp-client put
+    </step>
+    <step>
+        PHONE: Verify an incoming transfer is reported
+    </step>
+    <step>
+        PHONE: Accept the incoming transfer
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-client expect-state "in-progress"
+    </step>
+    <step>
+        PHONE: Verify a file transfer and its progress is being reported
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-client cancel
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-client expect-state "canceled"
+    </step>
+    <step>
+        PHONE: Verify the operation has been interrupted and an appropriate
+        message has been displayed.
+    </step>
+</case>

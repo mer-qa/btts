@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-20-a2dp-switch-song">
+    <description>
+        BTTS T 20 A2DP - Switch Song
+
+        Test play back over A2DP with two songs to switch between
+    </description>
+
+    <step>
+        BTTS: Select the first song as an audio sample to test with with:
+
+            bttsr a2dp set-sample &lt; &lt;first-sample-audio-file&gt;
+    </step>
+    <step manual="false">
+        bttsr a2dp async-record-and-verify
+    </step>
+    <step>
+        PHONE: Start play back the first song
+    </step>
+    <step manual="false">
+        bttsr --expect "true" a2dp async-record-and-verify-wait
+    </step>
+    <step>
+        PHONE: Pause/stop play back
+    </step>
+    <step>
+        BTTS: Select the second song as an audio sample to test with with:
+
+            bttsr a2dp set-sample &lt; &lt;second-sample-audio-file&gt;
+    </step>
+    <step manual="false">
+        bttsr a2dp async-record-and-verify
+    </step>
+    <step>
+        PHONE: Start play back the second song
+    </step>
+    <step manual="false">
+        bttsr --expect "true" a2dp async-record-and-verify-wait
+    </step>
+    <step>
+        PHONE: Pause/stop play back
+    </step>
+</case>

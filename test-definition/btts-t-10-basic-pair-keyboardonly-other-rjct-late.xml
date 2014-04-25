@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-pair-keyboardonly-other-rjct-late">
+    <description>
+        BTTS T 10 Basic - Pair (KeyboardOnly) Other Rejects Late
+
+        Test pairing.
+
+            - Other device with IO capability "KeyboardOnly".
+            - Other device rejects pairing AFTER it is accepted on phone.
+    </description>
+
+    <step>
+        PHONE: Ensure it is not paired with the BTTS node device (unpair if
+        necessary).
+    </step>
+    <step manual="false">
+        bttsr agent capability KeyboardOnly
+    </step>
+    <step>
+        PHONE: Initiate pairing
+    </step>
+    <step>
+        PHONE: Ensure a passkey is displayed.
+    </step>
+    <step>
+        PHONE: Accept pairing
+    </step>
+    <step manual="false">
+        bttsr --expect "true" agent expect-active-call RequestPasskeyCall
+    </step>
+    <step manual="false">
+        bttsr agent reject-active-call
+    </step>
+    <step>
+        PHONE: Verify an appropriate message has been displayed
+    </step>
+    <step>
+        PHONE: Verify it is NOT paired
+    </step>
+</case>

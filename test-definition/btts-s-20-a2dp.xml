@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<set name="btts-s-20-a2dp"
+    xmlns:xi="http://www.w3.org/2001/XInclude">
+    <description>
+        BTTS S 20 A2DP
+
+        Test A2DP profile related functionality.
+    </description>
+
+    <pre_steps>
+        <step>
+            PHONE: Ensure it is paired with the BTTS node device
+        </step>
+        <step>
+            PHONE: Ensure Bluetooth audio is connected
+        </step>
+        <step>
+            PHONE: Ensure sound volume is near its upper end
+        </step>
+        <step>
+            Ensure sample audio file(s) are available on the phone and this host
+        </step>
+    </pre_steps>
+
+    <xi:include href="btts-t-20-a2dp-basic-play-back.xml"/>
+    <xi:include href="btts-t-20-a2dp-pause.xml"/>
+    <xi:include href="btts-t-20-a2dp-switch-song.xml"/>
+</set>

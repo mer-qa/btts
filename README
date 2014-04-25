@@ -123,3 +123,8 @@ Record and match audio received via A2DP from the device being tested
       (Now start playing the song on the device being tested)
   (guest)$ btts a2dp async-record-and-verify-wait
   true
+
+
+MORE USAGE EXAMPLES
+
+See the content of the test-definition/ directory.

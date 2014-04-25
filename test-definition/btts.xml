@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="btts.xsl"?>
+<testdefinition version="1.0"
+    xmlns:xi="http://www.w3.org/2001/XInclude">
+    <suite name="btts" domain="Bluetooth">
+        <description>Bluetooth test suite</description>
+
+        <pre_steps>
+            <step>
+                BTTS: Ensure an appropriate adapter is selected and powered on.
+                
+                Check the currently selected adapter with:
+
+                    bttsr config adapter
+
+                Eventually select an adapter with:
+
+                    bttsr config adapter &lt;adapter-name&gt;
+                    bttsr adapter powered true
+            </step>
+            <step>
+                BTTS: Ensure the device being tested is selected.
+
+                Check the currently selected device with:
+
+                    bttsr config device
+
+                Eventually select a device with:
+
+                    bttsr config device &lt;bd-address&gt;
+            </step>
+            <step>
+                PHONE: Ensure Bluetooth is enabled and it is set visible.
+            </step>
+        </pre_steps>
+
+        <xi:include href="btts-s-10-basic.xml"/>
+        <xi:include href="btts-s-20-a2dp.xml"/>
+        <xi:include href="btts-s-30-hfp.xml"/>
+        <xi:include href="btts-s-40-opp.xml"/>
+        <xi:include href="btts-s-50-avrcp.xml"/>
+    </suite>
+</testdefinition>

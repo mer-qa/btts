@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-30-hfp-switch-audio-internal-initially">
+    <description>
+        BTTS T 30 HFP - Switch Audio - Internal Initially
+
+        Test handsfree - switch audio between the internal microphone & speaker
+        and the Bluetooth handsfree audio.
+
+        Audio does NOT switch to HF automatically when it is connected.
+
+        1. Start with Bluetooth audio disconnected
+        2. Start call
+        3. Connect Bluetooth audio
+        4. Switch to the HF
+        5. Switch back to the internal audio
+        6. Switch to the HF again
+    </description>
+
+    <step>
+        PHONE: Ensure Bluetooth audio is NOT connected
+    </step>
+    <step>
+        PHONE: Ensure it is configured so that it does NOT automatically switch
+        to HF when it becomes available.
+    </step>
+    <step>
+        PHONE: Dial an echo-test number, wait until the intro message finishes
+    </step>
+    <step manual="false">
+        bttsr --expect "false" hfp receiving-audio
+    </step>
+    <step>
+        PHONE: Connect Bluetooth audio
+    </step>
+    <step>
+        PHONE: Verify it still uses the internal audio
+    </ste>
+    <step manual="false">
+        bttsr --expect "false" hfp receiving-audio
+    </step>
+    <step>
+        PHONE: Switch call audio from the internal microphone & speaker to the HF
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp receiving-audio
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp play-back-and-verify-echo
+    </step>
+
+    <step>
+        PHONE: Switch call audio from the HF to the internal microphone & speaker
+    </step>
+    <step manual="false">
+        bttsr --expect "false" hfp receiving-audio
+    </step>
+
+    <step>
+        PHONE: Switch call audio from the internal microphone & speaker to the HF
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp receiving-audio
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp play-back-and-verify-echo
+    </step>
+    <step>
+        PHONE: End call
+    </step>
+</case>

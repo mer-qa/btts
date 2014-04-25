@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<set name="btts-s-10-basic"
+    xmlns:xi="http://www.w3.org/2001/XInclude">
+    <description>
+        BTTS S 10 Basic
+
+        Test basic functionality.
+    </description>
+
+    <pre_steps>
+    </pre_steps>
+
+    <xi:include href="btts-t-10-basic-visibility.xml"/>
+
+    <xi:include href="btts-t-10-basic-pair-noinputnooutput.xml"/>
+    <xi:include href="btts-t-10-basic-pair-legacy.xml"/>
+
+    <xi:include href="btts-t-10-basic-connect-audio.xml"/>
+
+    <xi:include href="btts-t-10-basic-pair-keyboardonly.xml"/>
+    <xi:include href="btts-t-10-basic-pair-displayonly.xml"/>
+    <xi:include href="btts-t-10-basic-pair-displayyesno.xml"/>
+    <xi:include href="btts-t-10-basic-pair-keyboarddisplay.xml"/>
+
+    <xi:include href="btts-t-10-basic-pair-other-init.xml"/>
+    <xi:include href="btts-t-10-basic-pair-other-init-legacy.xml"/>
+
+    <xi:include href="btts-t-10-basic-pair-noinputnooutput-other-rjct.xml"/>
+    <xi:include href="btts-t-10-basic-pair-keyboardonly-other-rjct.xml"/>
+    <xi:include href="btts-t-10-basic-pair-keyboardonly-other-rjct-late.xml"/>
+    <xi:include href="btts-t-10-basic-pair-displayonly-other-rjct.xml"/>
+    <xi:include href="btts-t-10-basic-pair-displayonly-other-rjct-late.xml"/>
+    <xi:include href="btts-t-10-basic-pair-displayyesno-other-rjct.xml"/>
+    <xi:include href="btts-t-10-basic-pair-displayyesno-other-rjct-late.xml"/>
+    <xi:include href="btts-t-10-basic-pair-keyboarddisplay-other-rjct.xml"/>
+    <xi:include href="btts-t-10-basic-pair-keyboarddisplay-other-rjct-late.xml"/>
+    <xi:include href="btts-t-10-basic-pair-legacy-other-rjct.xml"/>
+    <xi:include href="btts-t-10-basic-pair-legacy-other-rjct-late.xml"/>
+
+    <xi:include href="btts-t-10-basic-pair-other-init-phone-rjct.xml"/>
+    <xi:include href="btts-t-10-basic-pair-other-init-phone-rjct-late.xml"/>
+    <xi:include href="btts-t-10-basic-pair-other-init-legacy-phone-rjct.xml"/>
+</set>

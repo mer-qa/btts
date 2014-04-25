@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-pair-other-init-phone-rjct">
+    <description>
+        BTTS T 10 Basic - Pair Other Initiates Phone Rejects
+
+        Test pairing.
+
+        Pairing initiated by the other device (with IO capability
+        "KeyboardDisplay").
+        Phone rejects pairing BEFORE it is accepted on the other device.
+    </description>
+
+    <step>
+        PHONE: Ensure it is not paired with the BTTS node device (unpair if
+        necessary).
+    </step>
+    <step manual="false">
+        bttsr agent capability KeyboardDisplay
+    </step>
+    <step manual="false">
+        bttsr pairing pair
+    </step>
+    <step manual="false">
+        bttsr --expect "true" pairing expect-state pairing
+    </step>
+    <step>
+        PHONE: Verify it asks for pairing.
+    </step>
+    <step manual="false">
+        bttsr --expect "true" agent expect-active-call "RequestConfirmationCall"
+    </step>
+    <step>
+        BTTS: Verify the passkey is the same as the one displayed on the phone.
+
+        Get the passkey with:
+
+            bttsr agent active-call --get-arg passkey
+    </step>
+    <step>
+        PHONE: Reject pairing
+    </step>
+    <step manual="false">
+        bttsr --expect "true" pairing expect-state failed
+    </step>
+    <step>
+        PHONE: Verify it is NOT paired
+    </step>
+</case>

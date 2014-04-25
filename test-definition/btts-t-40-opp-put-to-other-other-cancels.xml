@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-40-opp-put-to-other-other-cancels">
+    <description>
+        BTTS T 40 OPP - Put to Other - Other Cancels
+
+        Test OPP "put" from the phone to the other device.
+
+            - The other device cancels the transfer before it ends
+    </description>
+
+    <step>
+        BTTS: Ensure a test object (a file) is available on the phone. It
+        should be big enought to guarantee a useful transfer time.
+    </step>
+    <step>
+        PHONE: "put" a file to the btts node device.
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-server expect-auth-state "in-progress"
+    </step>
+    <step manual="false">
+        bttsr opp-server auth-accept
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-server expect-auth-state "accepted"
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-server expect-xfer-state "in-progress"
+    </step>
+    <step>
+        PHONE: Verify a file transfer and its progress is being reported
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-server xfer-cancel
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-server expect-xfer-state "cancelled"
+    </step>
+    <step>
+        PHONE: Verify the operation has been interrupted and an appropriate
+        message has been displayed.
+    </step>
+</case>

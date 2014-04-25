@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-30-hfp-basic-call">
+    <description>
+        BTTS T 30 HFP - Basic Call
+
+        Test handsfree - basic call.
+
+        Dial an "echo service", play back an audio sample -- a modulated signal
+        encoding a text message -- and simultaneously record the echo.  Then
+        decode the recorded echo and match it against the original text
+        message.
+    </description>
+
+    <step>
+        PHONE: Ensure Bluetooth audio is connected
+    </step>
+    <step>
+        PHONE: Dial an echo-test number, wait until the intro message finishes
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp receiving-audio
+    </step>
+    <step manual="false">
+        bttsr --expect "true" hfp play-back-and-verify-echo
+    </step>
+    <step>
+        PHONE: End call
+    </step>
+</case>

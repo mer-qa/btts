@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-pair-other-init-legacy">
+    <description>
+        BTTS T 10 Basic - Pair Other Initiate (Legacy)
+
+        Test pairing.
+
+        Pairing initiated by the other device (the other device does not
+        support Secure Simple Pairing).
+    </description>
+
+    <step>
+        PHONE: Ensure it is not paired with the BTTS node device (unpair if
+        necessary).
+    </step>
+    <step manual="false">
+        bttsr agent capability KeyboardDisplay
+    </step>
+    <step manual="false">
+        bttsr pairing pair
+    </step>
+    <step manual="false">
+        bttsr --expect "true" pairing expect-state pairing
+    </step>
+    <step manual="false">
+        bttsr --expect "true" agent expect-active-call RequestPinCodeCall
+    </step>
+    <step manual="false">
+        bttsr agent finish-active-call "qwerty"
+    </step>
+    <step>
+        PHONE: Verify a passkey is requested
+    </step>
+    <step>
+        PHONE: Enter "qwerty" as the passkey
+    </step>
+    <step manual="false">
+        bttsr --expect "true" pairing expect-state succeeded
+    </step>
+    <step>
+        PHONE: Verify pairing succeeded
+    </step>
+    <step>
+        PHONE: Unpair
+    </step>
+</case>

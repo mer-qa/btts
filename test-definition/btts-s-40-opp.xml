@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<set name="btts-s-40-opp"
+    xmlns:xi="http://www.w3.org/2001/XInclude">
+    <description>
+        BTTS S 40 OPP
+
+        Test OPP profile related functionality.
+    </description>
+
+    <pre_steps>
+        <step>
+            PHONE: Ensure it is paired with the BTTS node device
+        </step>
+    </pre_steps>
+
+    <xi:include href="btts-t-40-opp-basic-put-to-phone.xml"/>
+    <xi:include href="btts-t-40-opp-basic-put-to-other.xml"/>
+
+    <xi:include href="btts-t-40-opp-put-to-other-other-rejects.xml"/>
+    <xi:include href="btts-t-40-opp-put-to-other-other-cancels.xml"/>
+    <xi:include href="btts-t-40-opp-put-to-other-phone-cancels.xml"/>
+
+    <xi:include href="btts-t-40-opp-put-to-phone-phone-rejects.xml"/>
+    <xi:include href="btts-t-40-opp-put-to-phone-phone-cancels.xml"/>
+    <xi:include href="btts-t-40-opp-put-to-phone-other-cancels.xml"/>
+
+    <xi:include href="btts-t-40-opp-put-to-other-phone-cancels-early.xml"/>
+    <xi:include href="btts-t-40-opp-put-to-phone-other-cancels-early.xml"/>
+</set>

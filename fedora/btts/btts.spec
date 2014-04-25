@@ -21,7 +21,9 @@ Requires:	python3-gobject
 Requires:	python3-pyxdg
 Requires:	sox
 Requires:	minimodem
+BuildRequires:	java-1.7.0-openjdk
 BuildRequires:	python2-devel
+BuildRequires:	saxon
 Requires(pre): shadow-utils
 
 %global __python %{__python2}

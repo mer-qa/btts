@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-20-a2dp-pause">
+    <description>
+        BTTS T 20 A2DP - Pause
+
+        Test pausing and resuming play back over A2DP
+    </description>
+
+    <step manual="false">
+        bttsr --expect "false" a2dp receiving-audio
+    </step>
+    <step>
+        PHONE: Start play back
+    </step>
+    <step manual="false">
+        bttsr --expect "true" a2dp receiving-audio
+    </step>
+    <step>
+        PHONE: Pause playback
+    </step>
+    <step manual="false">
+        bttsr --expect "false" a2dp receiving-audio
+    </step>
+    <step>
+        PHONE: Resume play back
+    </step>
+    <step manual="false">
+        bttsr --expect "true" a2dp receiving-audio
+    </step>
+    <step>
+        PHONE: Pause/Stop play back
+    </step>
+    <step manual="false">
+        bttsr --expect "false" a2dp receiving-audio
+    </step>
+</case>

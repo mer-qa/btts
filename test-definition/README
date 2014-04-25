@@ -1,0 +1,33 @@
+Semi-automatic test cases whose main purpose is to serve as a draft for later
+fully-automatic implementation in a way recognized by the selected Test
+Executor.
+
+This directory contains a decomposed Test Definition XML document:
+
+    - btts.xml      Root document (the Test Definition XML root node)
+    - btts-s-*.xml  One document per test-set (the <set> node)
+    - btts-t-*.xml  One document per test-case (the <case> node)
+
+To simply run a test-case with testrunner-lite, use:
+
+    $ make run
+    (You will be prompted to select the test case to be run)
+
+To produce the composed Test Definition XML document, use:
+
+    $ make OUTPUT=filename.xml
+    (OUTPUT defaults to "tests.xml" when omitted)
+
+In addition to the decomposition these are the differencies from valid Test
+Definition XML:
+
+    - //case/@manual is forced to "true"
+    - //set/pre_steps/@manual, which is not allowed by the Test Definition
+      XML, is emulated and forced to "true"
+
+Information sources about the Test Definition XML:
+
+    - https://wiki.merproject.org/wiki/Quality/TestDefinitionHowTo
+    - https://wiki.merproject.org/wiki/Quality/QA-tools/Testrunner-lite
+    - https://github.com/mer-tools/test-definition
+    - https://github.com/mer-tools/testrunner-lite

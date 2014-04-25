@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-pair-legacy">
+    <description>
+        BTTS T 10 Basic - Pair (Legacy)
+
+        Test pairing.
+
+            - Other device does not support Secure Simple Pairing.
+    </description>
+
+    <step>
+        PHONE: Ensure it is not paired with the BTTS node device (unpair if
+        necessary).
+    </step>
+    <step manual="false">
+        bttsr agent capability KeyboardDisplay
+    </step>
+    <step>
+        PHONE: Initiate pairing
+    </step>
+    <step manual="false">
+        bttsr --expect "true" agent expect-active-call RequestPinCodeCall
+    </step>
+    <step>
+        PHONE: Enter a PIN code
+    </step>
+    <step>
+        BTTS: Enter the same PIN code with:
+
+            bttsr agent finish-active-call '&lt;pin-code&gt;'
+    </step>
+    <step>
+        PHONE: Verify pairing succeeded
+    </step>
+    <step>
+        PHONE: Unpair
+    </step>
+</case>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-50-avrcp-basic-control">
+    <description>
+        BTTS T 50 AVRCP - Basic Control
+
+        Test basic play back control.
+
+        Uses play/pause/stop, next/previous
+        Does not use fast-forward/rewind, volume-up/-down
+    </description>
+
+    <step>
+        PHONE: Launch a media player, browse for an album/playlist
+    </ste>
+    <step manual="false">
+        bttsr avrcp play
+    </step>
+    <step>
+        PHONE: Verify it is playing
+    </step>
+    <step manual="false">
+        bttsr avrcp pause
+    </step>
+    <step>
+        PHONE: Verify it is paused
+    </step>
+    <step manual="false">
+        bttsr avrcp play
+    </step>
+    <step>
+        PHONE: Verify it is playing
+    </step>
+    <step manual="false">
+        bttsr avrcp next
+    </step>
+    <step>
+        PHONE: Verify it skipped to the next song
+    </step>
+    <step>
+        PHONE: Wait couple of seconds
+    </step>
+    <step manual="false">
+        bttsr avrcp previous
+    </step>
+    <step>
+        PHONE: Verify it rewinded to the start of the song
+    </step>
+    <step>
+        PHONE: Wait couple of seconds
+    </step>
+    <step manual="false">
+        bttsr avrcp previous && bttsr avrcp previous
+    </step>
+    <step>
+        PHONE: Verify it skipped to the previous song
+    </step>
+    <step manual="false">
+        bttsr avrcp stop
+    </step>
+    <step>
+        PHONE: Verify it stopped
+    </step>
+</case>

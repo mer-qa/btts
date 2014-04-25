@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-40-opp-put-to-other-phone-cancels-early">
+    <description>
+        BTTS T 40 OPP - Put to Other - Phone Cancels Early
+
+        Test OPP "put" from the phone to the other device.
+
+            - The phone cancels the transfer before it is accepted by the other
+              device
+    </description>
+
+    <step>
+        BTTS: Ensure a test object (a file) is available on the phone. It
+        should be big enought to guarantee a useful transfer time.
+    </step>
+    <step>
+        PHONE: "put" a file to the btts node device.
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-server expect-auth-state "in-progress"
+    </step>
+    <step>
+        PHONE: Cancel the transfer
+    </step>
+    <step manual="false">
+        bttsr --expect "true" opp-server expect-auth-state "cancelled"
+    </step>
+    <step>
+        PHONE: Verify the operation has been interrupted.
+    </step>
+</case>

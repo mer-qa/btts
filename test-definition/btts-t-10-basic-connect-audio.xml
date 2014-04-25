@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-connect-audio">
+    <description>
+        BTTS T 10 Basic - Connect Audio
+
+        Test connecting audio.
+    </description>
+
+    <step>
+        PHONE: Ensure the phone is paired with the btts node.
+    </step>
+    <step>
+        PHONE: Ensure audio is not connected (disconnect if necessary).
+    </step>
+    <step>
+        PHONE: Connect audio
+    </step>
+    <step>
+        PHONE: Disconnect audio
+    </step>
+</case>

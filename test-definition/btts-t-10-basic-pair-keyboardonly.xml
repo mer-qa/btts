@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-10-basic-pair-keyboardonly">
+    <description>
+        BTTS T 10 Basic - Pair (KeyboardOnly)
+
+        Test pairing.
+
+            - Other device with IO capability "KeyboardOnly".
+    </description>
+
+    <step>
+        PHONE: Ensure it is not paired with the BTTS node device (unpair if
+        necessary).
+    </step>
+    <step manual="false">
+        bttsr agent capability KeyboardOnly
+    </step>
+    <step>
+        PHONE: Initiate pairing
+    </step>
+    <step>
+        PHONE: Ensure a passkey is displayed.
+    </step>
+    <step manual="false">
+        bttsr --expect "true" agent expect-active-call RequestPasskeyCall
+    </step>
+    <step>
+        BTTS: Enter the same passkey as displayed on phone with:
+
+            bttsr agent finish-active-call "&lt;passkey&gt;"
+    </step>
+    <step>
+        PHONE: Verify pairing succeeded
+    </step>
+    <step>
+        PHONE: Unpair
+    </step>
+</case>

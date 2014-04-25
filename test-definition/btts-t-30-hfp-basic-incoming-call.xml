@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<case name="btts-t-30-hfp-basic-incoming-call">
+    <description>
+        BTTS T 30 HFP - Basic Incoming Call
+
+        Test handsfree - accepting on the HF side.
+    </description>
+
+    <step>
+        PHONE: Ensure Bluetooth audio is connected
+    </step>
+    <step>
+        Dial the phone SOMEHOW
+    </step>
+    <step>
+        PHONE: Verify it is ringing
+    </step>
+    <step manual="false">
+        bttsr hfp answer
+    </step>
+    <step>
+        PHONE: Verify call is in progress
+    </step>
+    <step manual="false">
+        bttsr hfp hangup
+    </step>
+    <step>
+        PHONE: Verify call ended
+    </step>
+</case>
