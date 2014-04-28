@@ -53,7 +53,7 @@ die()
 btts_commands()
 {
 	find ${BTTS_COMMAND_DIR} -mindepth 1 -maxdepth 1 -type f \
-		-name 'btts-*' -executable -printf '%f\n' |sed 's/^btts-//'
+		-name 'btts-*' -executable -printf '%f\n' |sed 's/^btts-//' |sort
 }
 
 locate_bluez_test_dir()
