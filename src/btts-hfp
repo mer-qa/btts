@@ -167,7 +167,15 @@ class CommandPlayBackAndVerifyEcho:
 
     Prints "true" or "false" to indicate if the recorded echo matches the
     played back sample.
-    ''')
+
+    DEBUGGING:
+        The following paths can be examined for debugging purposes:
+            - %(sample)s - The original sample
+            - %(echo)s - The recorded echo
+    ''' % {
+            'sample': SAMPLE_PATH,
+            'echo': ECHO_PATH,
+        })
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(

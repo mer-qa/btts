@@ -196,7 +196,13 @@ class CommandRecordAndVerify:
     stored sample.
 
     Exits with non zero when audio of the given duration cannot be recorded.
-    ''')
+
+    DEBUGGING:
+        The following paths can be examined for debugging purposes:
+            - %(match)s - The recorded sample
+    ''' % {
+            'match': MATCHED_PATH,
+        })
 
     def __init__(self, subparsers):
         parser = subparsers.add_parser(
