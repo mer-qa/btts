@@ -25,9 +25,6 @@ import logging
 import sys
 import textwrap
 
-# From bluez's tests
-import bluezutils
-
 import btts
 from   btts.cliutils import failure_on, bad_usage_on, error_handler
 

@@ -56,15 +56,6 @@ btts_commands()
 		-name 'btts-*' -executable -printf '%f\n' |sed 's/^btts-//' |sort
 }
 
-locate_bluez_test_dir()
-{
-	(shopt -s nullglob; echo /usr/lib*/bluez/test) |head -n1 |grep . \
-		|| die "bluez-tests not installed"
-}
-
-BLUEZ_TEST_DIR=$(locate_bluez_test_dir)
-export PYTHONPATH="${BLUEZ_TEST_DIR}:${PYTHONPATH}"
-
 . ${BTTS_COMMAND_DIR}/environment.sh
 
 export PYTHONPATH="${BTTS_PYTHON_LIB_DIR}:${PYTHONPATH}"

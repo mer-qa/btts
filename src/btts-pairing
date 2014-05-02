@@ -29,9 +29,6 @@ import signal
 import sys
 import textwrap
 
-# From bluez's tests
-import bluezutils
-
 import btts
 from   btts.utils import dbus_service_method, dbus_service_signal
 
@@ -87,13 +84,13 @@ class PairingTool(dbus.service.Object):
 
     #------------------------------------------------------------
     @dbus_service_method(TOOL_INTERFACE,
-                         in_signature="s", out_signature="")
-    def Pair(self, hw_address):
+                         in_signature="", out_signature="")
+    def Pair(self):
         self.Reset()
 
-        adapter = btts.Config().adapter_no_alias
-        self.device = bluezutils.find_device(hw_address.upper(), adapter)
-        self.device_path = self.device.object_path
+        device = btts.Device()
+        self.device = dbus.Interface(device._bluez_object,
+                                     'org.bluez.Device1')
 
         self.device.Pair(reply_handler=self.pair_reply,
                  error_handler=self.pair_error, timeout=60000)
@@ -162,7 +159,6 @@ class PairingTool(dbus.service.Object):
         self.state = self.State.Initial
         self.error = None
         self.device = None
-        self.device_path = None
 
 class CommandPair:
     _doc = textwrap.dedent('''\
@@ -180,7 +176,7 @@ class CommandPair:
         parser.set_defaults(handler=self)
 
     def __call__(self, tool, args):
-        tool.Pair(btts.Config().device)
+        tool.Pair()
 
 class CommandCancel:
     _doc = textwrap.dedent('''\
