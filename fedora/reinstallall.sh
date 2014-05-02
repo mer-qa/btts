@@ -10,7 +10,6 @@ then
 fi
 
 filter=(
-	"bluez*"
 	"pulseaudio"
 	"pulseaudio-module-bluetooth"
 	"pulseaudio-utils"

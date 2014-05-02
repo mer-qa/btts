@@ -11,7 +11,7 @@ BASIC WORKFLOW
 
 Rebuild and reinstall a single package
 
-        ./bluez.rpmbuild.sh
+        ./echoprint-codegen.rpmbuild.sh
         ./reinstallall.sh
 
 Rebuild and reinstall just the btts package
@@ -22,11 +22,6 @@ Rebuild and reinstall just the btts package
 
 CONTENT OF THIS DIRECTORY
 =========================
-
-bluez/
-        - Based on Fedora official packaging.
-        - Packaged some files not included in official Fedora packages
-        - Patched
 
 btts/
         - Packaging of btts itself.
