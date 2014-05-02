@@ -15,7 +15,8 @@
 Name:           pulseaudio
 Summary:        Improved Linux Sound Server
 Version:        %{pa_major}%{?pa_minor:.%{pa_minor}}
-Release:        2%{?gitcommit:.git%{shortcommit}}%{?dist}.btts1
+%global release_prefix 2%{?gitcommit:.git%{shortcommit}}%{?dist}.btts
+Release:        %{release_prefix}9999
 License:        LGPLv2+
 URL:            http://www.freedesktop.org/wiki/Software/PulseAudio
 %if 0%{?gitrel}

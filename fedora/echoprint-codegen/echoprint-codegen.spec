@@ -1,6 +1,7 @@
 Name:		echoprint-codegen
 Version:	4.12
-Release:	1%{?dist}.btts1
+%global release_prefix 1%{?dist}.btts
+Release:	%{release_prefix}9999
 Summary:	Music Fingerprint and Resolving Framework
 License:	MIT
 URL:		https://github.com/echonest/echoprint-codegen
